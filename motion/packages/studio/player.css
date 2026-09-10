@@ -1,0 +1,27 @@
+#studio-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 0 18px;
+  background: #101014;
+  border-top: 1px solid #22232a;
+  font-size: 13px;
+  color: #d4d4d8;
+}
+#studio-root button {
+  background: #1c1c22;
+  color: #f4f4f5;
+  border: 1px solid #2a2a32;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+#studio-root input[type="range"] { width: 100%; }
+#studio-time { font-variant-numeric: tabular-nums; color: #a1a1aa; min-width: 120px; text-align: right; }
+#studio-title { font-weight: 600; color: #fafafa; }

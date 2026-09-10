@@ -1,0 +1,15 @@
+{
+  "name": "motion-html-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "motion": "./bin/motion.mjs"
+  },
+  "scripts": {
+    "lint": "node bin/motion.mjs lint examples/product-launch/motion.md",
+    "describe": "node bin/motion.mjs describe examples/product-launch/motion.md",
+    "compile": "node bin/motion.mjs compile examples/product-launch/motion.md -o examples/product-launch/dist",
+    "preview": "node bin/motion.mjs preview examples/product-launch/motion.md"
+  }
+}

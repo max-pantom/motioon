@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.motioon/
+test-results/
+*.mp4
+*.webm
+.DS_Store

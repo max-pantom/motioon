@@ -1,0 +1,45 @@
+{
+  "name": "motioon",
+  "version": "0.2.0",
+  "description": "Agent-native HTML video runtime, renderer and studio",
+  "type": "module",
+  "bin": {
+    "motioon": "bin/motion.mjs",
+    "motion": "bin/motion.mjs"
+  },
+  "scripts": {
+    "dev": "node bin/motion.mjs studio examples/product-launch/motion.md",
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "node --test test/*.e2e.mjs",
+    "check": "node bin/motion.mjs validate examples/product-launch/motion.md",
+    "setup": "playwright install chromium --only-shell",
+    "mcp": "node packages/mcp/server.mjs",
+    "format": "prettier --write \"packages/**/*.{mjs,js,css,html}\" \"bin/*.mjs\" \"test/*.mjs\"",
+    "format:check": "prettier --check \"packages/**/*.{mjs,js,css,html}\" \"bin/*.mjs\" \"test/*.mjs\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "bin",
+    "packages",
+    "skills",
+    "examples/*/motion.md",
+    "examples/*/assets/**/*",
+    "examples/*/*.css",
+    "examples/*/*.js",
+    "SPEC.md",
+    "README.md",
+    "docs"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ffmpeg-static": "^5.2.0",
+    "playwright": "1.55.1",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

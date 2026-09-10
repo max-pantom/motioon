@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Motioon Studio</title>
+    <link rel="stylesheet" href="/studio.css" />
+  </head>
+  <body>
+    <a class="skip" href="#preview">Skip to preview</a>
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="Motioon Studio home"
+        ><svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="10" fill="currentColor" />
+          <path
+            d="M8 22V12h4v3l4-3v10m0-7 4-3h4v10"
+            fill="none"
+            stroke="white"
+            stroke-width="3"
+            stroke-linejoin="round"
+          /></svg
+        ><span>motioon<span class="brand-studio">studio</span></span></a
+      >
+      <div class="project-heading">
+        <h1 id="project-title">Opening project…</h1>
+        <span class="save-state" id="save-state">Local project</span>
+      </div>
+      <div class="header-actions">
+        <button
+          id="undo"
+          class="icon-button"
+          aria-label="Undo edit"
+          title="Undo"
+          disabled
+        >
+          ↶</button
+        ><button
+          id="redo"
+          class="icon-button"
+          aria-label="Redo edit"
+          title="Redo"
+          disabled
+        >
+          ↷</button
+        ><button id="source-open" class="secondary">Edit source</button
+        ><button id="export-open" class="primary">
+          <span aria-hidden="true">↑</span> Export video
+        </button>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Project scenes and assets">
+        <div class="sidebar-top">
+          <span class="eyebrow">WORKSPACE</span>
+          <div class="segmented">
+            <button id="scenes-tab" aria-pressed="true">Scenes</button
+            ><button id="assets-tab" aria-pressed="false">Assets</button>
+          </div>
+        </div>
+        <div id="scene-list"></div>
+        <div id="asset-list" hidden></div>
+        <div class="sidebar-foot">
+          <span class="local-dot"></span>
+          <div>
+            <strong>Made on your machine</strong
+            ><span>Your project stays local</span>
+          </div>
+        </div>
+      </aside>
+      <main class="editor" id="preview" tabindex="-1">
+        <div class="preview-heading">
+          <div>
+            <span class="eyebrow">COMPOSITION</span>
+            <h2 id="scene-title">Your canvas</h2>
+          </div>
+          <div class="preview-options">
+            <span id="dimensions" class="pill"></span
+            ><button
+              id="fit-button"
+              class="quiet"
+              title="Fit canvas to preview"
+            >
+              Fit <span id="zoom">100%</span>
+            </button>
+          </div>
+        </div>
+        <div class="canvas-area" id="canvas-area">
+          <div class="canvas-shell" id="canvas-shell">
+            <iframe
+              id="composition"
+              title="Video composition preview"
+              sandbox="allow-scripts"
+              scrolling="no"
+            ></iframe>
+          </div>
+        </div>
+        <div class="transport">
+          <button
+            id="previous-frame"
+            class="icon-button"
+            aria-label="Previous frame"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                d="M5 5v14m13-14L8 12l10 7z"
+                stroke="currentColor"
+                stroke-width="1.6"
+                fill="none"
+                stroke-linejoin="round"
+              />
+            </svg></button
+          ><button id="play" class="play-button" aria-label="Play video">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 5 11 7-11 7z" fill="currentColor" />
+            </svg></button
+          ><button id="next-frame" class="icon-button" aria-label="Next frame">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                d="M19 5v14M6 5l10 7-10 7z"
+                stroke="currentColor"
+                stroke-width="1.6"
+                fill="none"
+                stroke-linejoin="round"
+              />
+            </svg></button
+          ><span class="transport-divider"></span
+          ><output id="timecode">00:00.00</output
+          ><span class="muted" id="total-time"></span
+          ><span class="transport-divider"></span
+          ><label class="sound-toggle"
+            ><input type="checkbox" id="sound" checked /> Audio</label
+          >
+        </div>
+        <div class="canvas-caption">
+          <span id="frame-counter">Frame 0</span
+          ><span>Space to play · ← → to step</span>
+        </div>
+      </main>
+      <aside class="inspector" aria-label="Selection properties">
+        <div class="inspector-heading">
+          <span class="eyebrow">INSPECTOR</span>
+          <h2 id="selection-title">Composition</h2>
+          <p id="selection-type">Adjust the details.</p>
+        </div>
+        <form id="properties"></form>
+        <div class="inspector-note">
+          <span aria-hidden="true">↔</span>
+          <p>
+            Every adjustment stays editable.<br />Changes save to your project.
+          </p>
+        </div>
+      </aside>
+      <section class="timeline-panel" aria-label="Video timeline">
+        <div class="timeline-heading">
+          <div>
+            <h2>Timeline</h2>
+            <span id="scene-count" class="muted"></span>
+          </div>
+          <div>
+            <label class="sr-only" for="scrubber"
+              >Playhead time in seconds</label
+            ><input
+              id="scrubber"
+              type="range"
+              min="0"
+              max="8"
+              step="0.033333"
+              value="0"
+            /><output id="timeline-duration"></output>
+          </div>
+        </div>
+        <div class="timeline-scroll"><div id="timeline"></div></div>
+      </section>
+    </div>
+    <div id="status" role="status" class="status"></div>
+    <dialog id="source-dialog" aria-label="Motion source editor">
+      <form method="dialog" class="dialog-heading">
+        <div>
+          <span class="eyebrow">PROJECT SOURCE</span>
+          <h2>motion.md</h2>
+        </div>
+        <button class="icon-button" aria-label="Close source editor">×</button>
+      </form>
+      <p class="muted">
+        Edit your brief, scenes, and HTML. The project is validated before
+        saving.
+      </p>
+      <label class="sr-only" for="source-text">Motion markdown source</label
+      ><textarea id="source-text" spellcheck="false"></textarea>
+      <p id="source-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="source-save" class="primary">Save changes</button>
+      </div>
+    </dialog>
+    <dialog id="export-dialog" aria-label="Export video">
+      <form method="dialog" class="dialog-heading">
+        <div>
+          <span class="eyebrow">READY WHEN YOU ARE</span>
+          <h2>Make it a video.</h2>
+        </div>
+        <button class="icon-button" aria-label="Close export dialog">×</button>
+      </form>
+      <p class="muted">
+        Render every frame at full resolution, right on your machine.
+      </p>
+      <div class="export-summary">
+        <span id="export-resolution"></span><span id="export-duration"></span>
+      </div>
+      <div class="field-row">
+        <label
+          >Format<select id="export-format">
+            <option value="mp4">MP4 · H.264</option>
+            <option value="webm">WebM · VP9</option>
+          </select></label
+        ><label
+          >Quality<select id="export-quality">
+            <option value="high">High quality</option>
+            <option value="draft">Quick draft</option>
+          </select></label
+        >
+      </div>
+      <progress id="export-progress" max="1" value="0" hidden></progress>
+      <p id="export-status" role="status"></p>
+      <div class="dialog-actions">
+        <a id="download" class="primary" hidden>Download video</a
+        ><button id="render" class="primary">Render video</button>
+      </div>
+    </dialog>
+    <script type="module" src="/studio.js"></script>
+  </body>
+</html>
