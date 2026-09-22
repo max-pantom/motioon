@@ -86,11 +86,38 @@ export async function startProjectServer(
           return send(200, read());
         }
         if (pathname === "/api/op") {
-          const { sessionFor, runCommand, describe } = await import(
-            "../editor/editor.mjs"
-          );
-          const result = runCommand(sessionFor(file), data.command || data);
-          return send(200, { result, state: describe(sessionFor(file)) });
+          const { sessionFor, runCommand, runCommands, describe } =
+            await import("../editor/editor.mjs");
+          const session = sessionFor(file);
+          const batch =
+            Array.isArray(data.commands) && data.commands.length
+              ? runCommands(session, data.commands)
+              : Array.isArray(data.commands)
+                ? { results: [], grouped: false }
+                : null;
+          let result;
+          if (batch) {
+            result = {
+              op: "batch",
+              ok: true,
+              dirty: batch.grouped,
+              results: batch.results,
+              grouped: batch.grouped,
+            };
+          } else {
+            result = runCommand(session, data.command || data);
+          }
+          if (result.ok === false)
+            return send(400, {
+              error: result.result?.reason || "Op not applied.",
+            });
+          return send(200, {
+            result,
+            state: describe(session),
+            undo: session.history.length,
+            redo: session.future.length,
+            ...read(),
+          });
         }
         if (pathname === "/api/source") {
           saveSource(file, data.source, data.revision);

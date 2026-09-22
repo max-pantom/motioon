@@ -27,7 +27,8 @@ A useful loop:
    scale, enabled, locked), `motion_editor_run {file, op, ...}` for one named op,
    or `motion_editor_batch {file, commands:[...]}` for a sequence. Every document
    op is a single named `apply` step that writes `motion.md`; every op is
-   undoable with `{op:"undo"}` (snapshot + write). Read `motion_editor_schema {}`
+   undoable with `{op:"undo"}` (snapshot + write), and a batch is one undo unit
+   (a single snapshot before its first dirty command). Read `motion_editor_schema {}`
    before guessing an op signature. Ops: set (text/x/y/opacity/rotation/scale/
    fill/role/src/…), keyframe, deleteKeyframe, move, trim, reorder, enable, lock,
    parent, addLayer, duplicate, remove, addScene, setScene, removeScene.

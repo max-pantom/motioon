@@ -15,6 +15,7 @@ import { renderVideo, inspectFrames } from "../renderer/render.mjs";
 import {
   sessionFor,
   runCommand,
+  runCommands,
   describe,
   opSchema,
 } from "../editor/editor.mjs";
@@ -84,7 +85,7 @@ export function createMcpServer() {
   );
   register(
     "motion_editor_batch",
-    "Run several editor commands in one session in order. Each dirty command writes motion.md; the session state (history, playhead, lock) is shared, so a later undo in the same batch steps back through all of them. Returns per-command results and the final state.",
+    "Run several editor commands in one session in order. The batch is a single undo unit: one snapshot is taken before the first dirty command, so one undo walks the whole batch back. Session state (history, playhead, lock) is shared. Returns per-command results and the final state.",
     {
       file: z.string().describe("Absolute path to motion.md"),
       commands: z
@@ -96,24 +97,17 @@ export function createMcpServer() {
     },
     async (a) => {
       const session = sessionFor(a.file);
-      const results = [];
-      for (let i = 0; i < a.commands.length; i++) {
-        try {
-          const r = runCommand(session, a.commands[i]);
-          results.push({
-            index: i,
-            op: r.op,
-            ok: r.ok,
-            dirty: r.dirty,
-            result: r.result,
-          });
-        } catch (error) {
-          throw new Error(
-            `Batch aborted at command ${i} (${a.commands[i].op}): ${error.message}`,
-          );
-        }
+      try {
+        const { results, grouped } = runCommands(session, a.commands);
+        return text({
+          results,
+          grouped,
+          undo: session.history.length,
+          state: describe(session),
+        });
+      } catch (error) {
+        throw new Error(`Batch aborted: ${error.message}`);
       }
-      return text({ results, state: describe(session) });
     },
   );
 

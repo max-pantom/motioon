@@ -313,6 +313,38 @@ test(
       });
       assert.equal((await undo.json()).result.result.restored, true);
       assert.equal(loadComposition(p.file).scenes[0].elements[0].text, "Hello");
+      const batch = await fetch(`${service.url}/api/op`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-motion-token": token,
+        },
+        body: JSON.stringify({
+          commands: [
+            { op: "set", layer: "title", prop: "opacity", value: 0.4 },
+            { op: "set", layer: "title", prop: "rotation", value: 9 },
+          ],
+        }),
+      });
+      assert.equal(batch.status, 200);
+      const flownBatch = await batch.json();
+      assert.equal(flownBatch.result.grouped, true);
+      assert.equal(flownBatch.result.results.length, 2);
+      assert.equal(flownBatch.undo, 1);
+      const afterBatch = loadComposition(p.file).scenes[0].elements[0];
+      assert.equal(afterBatch.opacity, 0.4);
+      const undoBatch = await fetch(`${service.url}/api/op`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-motion-token": token,
+        },
+        body: JSON.stringify({ command: { op: "undo" } }),
+      });
+      assert.equal((await undoBatch.json()).result.result.restored, true);
+      const undone = loadComposition(p.file).scenes[0].elements[0];
+      assert.equal(undone.opacity, 0.7);
+      assert.equal("rotation" in undone, false);
     } finally {
       await service.close();
       p.close();

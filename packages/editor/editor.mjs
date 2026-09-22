@@ -66,6 +66,16 @@ const PROP_TYPES = {
   parent: "string",
   enabled: "boolean",
   locked: "boolean",
+  font_size: "number",
+  font_weight: "number",
+  blur: "number",
+  z: "number",
+  letter_spacing: "number",
+  line_height: "number",
+  max_width: "number",
+  split: "string",
+  stagger: "number",
+  shape: "string",
 };
 
 const FILE_PROP = {
@@ -89,6 +99,16 @@ const FILE_PROP = {
   html: "html",
   enter: "enter",
   exit: "exit",
+  font_size: "font_size",
+  font_weight: "font_weight",
+  blur: "blur",
+  z: "z",
+  letter_spacing: "letter_spacing",
+  line_height: "line_height",
+  max_width: "max_width",
+  split: "split",
+  stagger: "stagger",
+  shape: "shape",
 };
 
 const DEFAULT_VALUE = {
@@ -588,6 +608,62 @@ function redo(session) {
     result: { restored: true },
     state: describe(session),
   };
+}
+
+export function runCommands(session, commands) {
+  if (!Array.isArray(commands) || !commands.length)
+    throw new Error("runCommands needs a non-empty commands array.");
+  const results = [];
+  let grouped = false;
+  for (const cmd of commands) {
+    if (!cmd || typeof cmd.op !== "string" || !OP_NAMES.has(cmd.op))
+      throw new Error(
+        `Unknown op '${cmd.op}'. Ops: ${[...OP_NAMES].join(", ")}.`,
+      );
+    if (cmd.op === "describe" || cmd.op === "undo" || cmd.op === "redo") {
+      const r = runCommand(session, cmd);
+      results.push({
+        index: results.length,
+        op: r.op,
+        ok: r.ok,
+        dirty: r.dirty,
+        result: r.result,
+      });
+      continue;
+    }
+    if (SESSION_SET.has(cmd.op)) {
+      results.push({
+        index: results.length,
+        op: cmd.op,
+        ok: true,
+        dirty: false,
+        result: apply(session, cmd),
+        state: describe(session),
+      });
+      continue;
+    }
+    if (!grouped) {
+      session.history.push(session.source);
+      grouped = true;
+    }
+    let result;
+    try {
+      result = apply(session, cmd);
+    } catch (error) {
+      if (grouped) session.history.pop();
+      throw error;
+    }
+    session.future = [];
+    results.push({
+      index: results.length,
+      op: cmd.op,
+      ok: true,
+      dirty: true,
+      result,
+      state: describe(session),
+    });
+  }
+  return { results, grouped };
 }
 
 const round3 = (v) => Math.round(v * 1000) / 1000;

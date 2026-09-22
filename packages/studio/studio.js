@@ -21,8 +21,9 @@ let project,
   elementId,
   ready = false,
   dirty = false,
-  history = [],
-  future = [],
+  undos = 0,
+  redos = 0,
+  lastBusSeek = 0,
   audio = [],
   saveBusy = false,
   noticeTimer,
@@ -51,6 +52,28 @@ async function request(path, data) {
   const value = await res.json();
   if (!res.ok) throw new Error(value.error || "Request failed.");
   return value;
+}
+function applyBus(value, { installResponse = true } = {}) {
+  undos = value.undo ?? undos;
+  redos = value.redo ?? redos;
+  if (installResponse) install(value);
+  else {
+    $("undo").disabled = !undos;
+    $("redo").disabled = !redos;
+  }
+  return value;
+}
+async function bus(command, options = {}) {
+  return applyBus(await request("/api/op", { command }), options);
+}
+async function busBatch(commands, options = {}) {
+  return applyBus(await request("/api/op", { commands }), options);
+}
+function busSeek(t) {
+  const now = Date.now();
+  if (now - lastBusSeek < 100) return;
+  lastBusSeek = now;
+  bus({ op: "seek", t }, { installResponse: false }).catch(() => {});
 }
 function currentScene() {
   return comp.scenes.find((s) => s.id === sceneId) || comp.scenes[0];
@@ -107,6 +130,7 @@ function setTime(value) {
     Math.min((Math.ceil(comp.duration * comp.fps) - 1) / comp.fps, value),
   );
   $("composition").contentWindow.postMessage({ type: "seek", t: time }, "*");
+  busSeek(time);
   $("timecode").textContent = stamp(time);
   $("scrubber").value = time;
   $("frame-counter").textContent =
@@ -122,6 +146,11 @@ function setPlaying(value) {
   $("play").innerHTML = value
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zm7 0h4v14h-4z" fill="currentColor"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7z" fill="currentColor"/></svg>';
+  lastBusSeek = 0;
+  bus({ op: value ? "play" : "pause" }, { installResponse: false }).catch(
+    () => {},
+  );
+  if (!value) busSeek(time);
   syncAudio(true);
 }
 function rebuildAudio() {
@@ -158,8 +187,8 @@ function install(value, { reload = true } = {}) {
   );
   $("scrubber").step = 1 / comp.fps;
   $("save-state").textContent = "All changes saved";
-  $("undo").disabled = !history.length;
-  $("redo").disabled = !future.length;
+  $("undo").disabled = !undos;
+  $("redo").disabled = !redos;
   dirty = false;
   renderLists();
   renderProperties();
@@ -194,6 +223,9 @@ function select(scene, element = null, seek = true) {
   $("composition").contentWindow.postMessage(
     { type: "select", id: elementId },
     "*",
+  );
+  bus({ op: "select", id: elementId }, { installResponse: false }).catch(
+    () => {},
   );
 }
 function renderLists() {
@@ -261,54 +293,89 @@ async function saveProperties(event) {
   const form = event.currentTarget,
     e = currentElement(),
     values = new FormData(form),
-    set = {};
-  for (const [k, v] of values) {
-    if (
-      k.startsWith("enter_") ||
-      k === "visible" ||
-      (["w", "h"].includes(k) && v === "")
-    )
-      continue;
-    set[k] =
-      k === "split" && v === ""
-        ? null
-        : [
-              "at",
-              "duration",
-              "font_size",
-              "scale",
-              "rotation",
-              "opacity",
-              "stagger",
-            ].includes(k)
-          ? Number(v)
-          : ["x", "y", "w", "h"].includes(k) && /^-?\d+(\.\d+)?$/.test(v)
-            ? Number(v)
-            : v;
-  }
-  if (e) {
-    set.hidden = !values.has("visible");
+    commands = [];
+  const num = (k) => {
+    const v = values.get(k);
+    if (v === "" || v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const set = (layer, prop, value) => {
+    if (value !== null && value !== undefined)
+      commands.push({ op: "set", layer, prop, value });
+  };
+  if (!e) {
+    const s = currentScene();
+    const at = num("at");
+    const duration = num("duration");
+    if (at != null)
+      commands.push({ op: "setScene", scene: s.id, at: Number(at.toFixed(3)) });
+    if (duration != null && duration > 0)
+      commands.push({
+        op: "setScene",
+        scene: s.id,
+        duration: Number(duration.toFixed(3)),
+      });
+  } else {
+    const id = e.id;
+    if (["text", "caption"].includes(e.type)) {
+      set(id, "text", values.get("text"));
+      set(id, "font_size", num("font_size"));
+      set(id, "color", values.get("color") || null);
+      const split = values.get("split");
+      set(id, "split", split === "" ? null : split);
+      set(id, "stagger", num("stagger"));
+    } else if (e.type === "shape") {
+      set(id, "fill", values.get("fill") || null);
+    } else if (e.type === "image") {
+      set(id, "src", values.get("src") || null);
+    }
+    set(id, "x", values.get("x"));
+    set(id, "y", values.get("y"));
+    const w = num("w"),
+      h = num("h");
+    if (w != null) set(id, "w", w);
+    if (h != null) set(id, "h", h);
+    set(id, "scale", num("scale"));
+    set(id, "rotation", num("rotation"));
+    set(id, "opacity", num("opacity"));
+    set(id, "enabled", values.has("visible"));
+    const at = num("at");
+    if (at != null)
+      commands.push({
+        op: "move",
+        layer: id,
+        start: Number((currentScene().start + at).toFixed(3)),
+      });
+    const duration = num("duration");
+    if (duration != null && duration > 0)
+      commands.push({
+        op: "trim",
+        layer: id,
+        duration: Number(duration.toFixed(3)),
+      });
     const preset = values.get("enter_preset");
-    set.enter =
-      preset === "none"
-        ? "none"
-        : {
-            preset,
-            duration: Number(values.get("enter_duration")),
-            delay: Number(values.get("enter_delay")),
-            easing: values.get("enter_easing") || "ease-out",
-          };
+    if (preset)
+      commands.push({
+        op: "set",
+        layer: id,
+        prop: "enter",
+        value:
+          preset === "none"
+            ? null
+            : {
+                preset,
+                duration: Number(values.get("enter_duration")),
+                delay: Number(values.get("enter_delay")),
+                easing: values.get("enter_easing") || "ease-out",
+              },
+      });
   }
   const button = form.querySelector("[type=submit]");
   button.disabled = true;
   saveBusy = true;
   try {
-    await mutate("/api/patch", {
-      scene: sceneId,
-      element: elementId || undefined,
-      set,
-      revision: project.revision,
-    });
+    await busBatch(commands);
     notify("Adjustments saved");
   } catch (error) {
     $("property-error").textContent = error.message;
@@ -318,14 +385,9 @@ async function saveProperties(event) {
     button.disabled = false;
   }
 }
-async function mutate(path, payload, { record = true } = {}) {
-  const old = project.source;
-  const value = await request(path, payload);
-  if (record) {
-    history.push(old);
-    future = [];
-  }
-  install(value);
+async function mutate(path, payload) {
+  await request(path, payload);
+  install(await request("/api/project"));
 }
 function renderTimeline() {
   const marks = Array.from(
@@ -407,20 +469,9 @@ $("undo").onclick = async () => {
     notify("Save or discard your adjustments before undoing an edit.", true);
     return;
   }
-  const source = history.at(-1);
-  if (!source) return;
   saveBusy = true;
   try {
-    const old = project.source;
-    await mutate(
-      "/api/source",
-      { source, revision: project.revision },
-      { record: false },
-    );
-    history.pop();
-    future.push(old);
-    $("undo").disabled = !history.length;
-    $("redo").disabled = false;
+    await bus({ op: "undo" });
     notify("Edit undone");
   } catch (e) {
     notify(e.message, true);
@@ -434,20 +485,9 @@ $("redo").onclick = async () => {
     notify("Save or discard your adjustments before redoing an edit.", true);
     return;
   }
-  const source = future.at(-1);
-  if (!source) return;
   saveBusy = true;
   try {
-    const old = project.source;
-    await mutate(
-      "/api/source",
-      { source, revision: project.revision },
-      { record: false },
-    );
-    future.pop();
-    history.push(old);
-    $("redo").disabled = !future.length;
-    $("undo").disabled = false;
+    await bus({ op: "redo" });
     notify("Edit restored");
   } catch (e) {
     notify(e.message, true);

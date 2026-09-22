@@ -7,6 +7,7 @@ import {
   openSession,
   sessionFor,
   runCommand,
+  runCommands,
   describe,
   opSchema,
 } from "../packages/editor/editor.mjs";
@@ -231,6 +232,26 @@ test("session ops never dirty the file; describe does not write", () => {
   assert.equal(describe(s).playhead, 2);
   assert.deepEqual(describe(s).selection, ["title"]);
   assert.deepEqual(describe(s).workarea, { x: 0, y: 0, w: 1280, h: 720 });
+});
+
+test("runCommands groups a batch into one undo unit", () => {
+  const file = setup();
+  const s = openSession(file);
+  const before = readFileSync(file, "utf8");
+  const { grouped, results } = runCommands(s, [
+    { op: "set", layer: "title", prop: "text", value: "batch one" },
+    { op: "set", layer: "title", prop: "opacity", value: 0.5 },
+    { op: "set", layer: "title", prop: "rotation", value: 12 },
+  ]);
+  assert.equal(grouped, true);
+  assert.equal(results.length, 3);
+  assert.equal(s.history.length, 1);
+  const changed = readFileSync(file, "utf8");
+  assert.notEqual(changed, before);
+  runCommand(s, { op: "undo" });
+  assert.equal(readFileSync(file, "utf8"), before);
+  runCommand(s, { op: "redo" });
+  assert.equal(readFileSync(file, "utf8"), changed);
 });
 
 test("unknown op and unknown prop fail loudly without writing", () => {

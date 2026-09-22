@@ -101,7 +101,9 @@ MCP editor tools (the only authoring surface): `motion_editor_state`,
 a named op — `set`, `keyframe`, `deleteKeyframe`, `move`, `trim`, `reorder`,
 `enable`, `lock`, `parent`, `addLayer`, `duplicate`, `remove`, `addScene`,
 `setScene`, `removeScene` — applied in one step, written straight to `motion.md`,
-and undoable with `{op:"undo"}`. Pipeline tools outside the editor:
+and undoable with `{op:"undo"}`. A `motion_editor_batch` runs in one session and
+is a single undo unit (one snapshot for the whole sequence). Pipeline tools
+outside the editor:
 `motion_init`, `motion_read_spec`, `motion_validate`, `motion_compile`,
 `motion_inspect_frames`, `motion_render`.
 
