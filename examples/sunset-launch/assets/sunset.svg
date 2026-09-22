@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <!-- sun: full circle, half hidden by horizon -->
+  <circle cx="120" cy="138" r="58" fill="#FF7043"/>
+  <!-- horizon line (drawn in via draw preset) -->
+  <rect x="24" y="140" width="192" height="5" rx="2.5" fill="#161616"/>
+  <!-- rays -->
+  <line x1="120" y1="34" x2="120" y2="60" stroke="#161616" stroke-width="6" stroke-linecap="round"/>
+  <line x1="50" y1="62" x2="68" y2="82" stroke="#161616" stroke-width="6" stroke-linecap="round"/>
+  <line x1="190" y1="62" x2="172" y2="82" stroke="#161616" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -6,14 +6,26 @@
     animations = [],
     stage;
   const clamp = (x, min = 0, max = 1) => Math.min(max, Math.max(min, x));
+  const springCurve = (t, frequency = 3, damping = 8) =>
+    t >= 1
+      ? 1
+      : t <= 0
+        ? 0
+        : 1 - Math.exp(-damping * t) * Math.cos(2 * Math.PI * frequency * t);
   const easings = {
     linear: (t) => t,
     "ease-out": (t) => 1 - (1 - t) ** 3,
     "ease-in": (t) => t ** 3,
     "ease-in-out": (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
     "expo.out": (t) => (t === 1 ? 1 : 1 - 2 ** (-10 * t)),
+    spring: (t) => springCurve(t),
   };
   function ease(name, t) {
+    const custom = /^spring\(\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(
+      String(name),
+    );
+    if (custom)
+      return springCurve(clamp(t), Number(custom[1]), Number(custom[2] ?? 8));
     return (easings[name] || easings["ease-out"])(clamp(t));
   }
   function interpolate({
@@ -58,6 +70,7 @@
     if (name === "blur-in") s.blur = (1 - p) * 12;
     if (name === "wipe-left") s.clip = `inset(0 ${(1 - p) * 100}% 0 0)`;
     if (name === "wipe-up") s.clip = `inset(${(1 - p) * 100}% 0 0 0)`;
+    if (name === "reveal") s.clip = `inset(0 0 ${(1 - p) * 100}% 0)`;
     if (name === "slide-left") s.x = (1 - p) * 80;
     if (name === "slide-right") s.x = (p - 1) * 80;
     if (name === "pop") s.scale = 0.72 + 0.28 * p;
@@ -68,15 +81,71 @@
     }
     return s;
   }
+  function drawStroke(root, p) {
+    const shapes = root.querySelectorAll(
+      "svg path, svg line, svg polyline, svg polygon, svg circle, svg ellipse, svg rect",
+    );
+    for (const shape of shapes) {
+      let length = Number(shape.dataset.drawLength);
+      if (!length || !Number.isFinite(length)) {
+        try {
+          length = shape.getTotalLength();
+        } catch {
+          continue;
+        }
+        if (!Number.isFinite(length)) continue;
+        shape.dataset.drawLength = String(length);
+      }
+      shape.style.strokeDasharray = String(length);
+      shape.style.strokeDashoffset = String(length * (1 - p));
+    }
+  }
   function amount(m, t) {
     return ease(
       m.easing,
       m.duration === 0 ? (t >= m.delay ? 1 : 0) : (t - m.delay) / m.duration,
     );
   }
+  function tracksValue(spec, t) {
+    let opacity = 1,
+      x = 0,
+      y = 0,
+      scale = 1,
+      rotation = 0,
+      blur = 0;
+    for (const track of spec) {
+      const p = ease(
+        track.easing,
+        track.duration === 0
+          ? t >= track.start
+            ? 1
+            : 0
+          : (t - track.start) / track.duration,
+      );
+      const value = track.from + (track.to - track.from) * p;
+      if (track.prop === "opacity") opacity *= value;
+      else if (track.prop === "x") x += value;
+      else if (track.prop === "y") y += value;
+      else if (track.prop === "scale") scale *= value;
+      else if (track.prop === "rotation") rotation += value;
+      else if (track.prop === "blur") blur += value;
+    }
+    return { opacity, x, y, scale, rotation, blur };
+  }
+  function formatCount(count, value) {
+    const fixed = value.toFixed(count.decimals || 0);
+    const body =
+      count.thousands && !(count.decimals > 0)
+        ? fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+        : fixed;
+    return (count.prefix || "") + body + (count.suffix || "");
+  }
   function applyElement(el, s, local) {
     const t = local - s.at;
-    const tokens = [...el.querySelectorAll(".motion-token")];
+    const tokens =
+      s.type === "text" || s.type === "caption"
+        ? [...el.querySelectorAll(":scope > .motion-token")]
+        : [];
     const alive = t >= 0 && t < s.duration && !s.hidden;
     el.style.display = alive ? "" : "none";
     if (!alive) return;
@@ -85,12 +154,15 @@
       y = 0,
       scale = s.scale ?? 1,
       rotation = s.rotation || 0,
-      blur = 0,
+      blur = s.blur || 0,
       clip = "none";
     const motions = [];
-    if (s.enter && !tokens.length)
+    const drawPresets = [s.enter, s.exit].filter(
+      (m) => m && m.preset === "draw",
+    );
+    if (s.enter && s.enter.preset !== "draw" && !tokens.length)
       motions.push(sample(s.enter.preset, amount(s.enter, t)));
-    if (s.exit)
+    if (s.exit && s.exit.preset !== "draw")
       motions.push(
         sample(
           s.exit.preset,
@@ -110,25 +182,73 @@
       blur += v.blur;
       if (v.clip !== "none") clip = v.clip;
     }
+    if (s.animate) {
+      const values = tracksValue(s.animate, t);
+      opacity *= values.opacity;
+      x += values.x;
+      y += values.y;
+      scale *= values.scale;
+      rotation += values.rotation;
+      blur += values.blur;
+    }
     el.style.opacity = opacity;
     el.style.filter = blur ? `blur(${blur}px)` : "none";
     el.style.clipPath = clip;
-    el.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px) scale(${scale}) rotate(${rotation}deg)`;
-    for (const token of tokens) {
-      const index = Number(token.dataset.token);
-      const delay = index * (s.stagger ?? 0.045);
-      const tokenMotion = s.enter
-        ? sample(
-            s.enter.preset,
-            amount({ ...s.enter, delay: s.enter.delay + delay }, t),
-          )
-        : sample("none", 1);
-      token.style.opacity = tokenMotion.opacity;
-      token.style.filter = tokenMotion.blur
-        ? `blur(${tokenMotion.blur}px)`
-        : "none";
-      token.style.clipPath = tokenMotion.clip;
-      token.style.transform = `translate(${tokenMotion.x}px,${tokenMotion.y}px) scale(${tokenMotion.scale}) rotate(${tokenMotion.rotation}deg)`;
+    el.style.transform =
+      s.type === "group"
+        ? `translate(${x}px,${y}px) scale(${scale}) rotate(${rotation}deg)`
+        : `translate(-50%,-50%) translate(${x}px,${y}px) scale(${scale}) rotate(${rotation}deg)`;
+    if (drawPresets.length && !tokens.length) {
+      const motion = drawPresets[0];
+      drawStroke(el, amount(motion, t));
+      if (drawPresets[1]) drawStroke(el, 1 - amount(drawPresets[1], t));
+    }
+    if (tokens.length && s.enter && s.enter.preset === "type") {
+      const revealed = Math.floor(
+        amount({ ...s.enter, delay: s.enter.delay }, t) * (tokens.length + 1),
+      );
+      for (const token of tokens) {
+        const index = Number(token.dataset.token);
+        token.style.opacity = index < revealed ? 1 : 0;
+        token.style.filter = "none";
+        token.style.clipPath = "none";
+        token.style.transform = "none";
+      }
+    } else
+      for (const token of tokens) {
+        const index = Number(token.dataset.token);
+        const delay = index * (s.stagger ?? 0.045);
+        const tokenMotion = s.enter
+          ? sample(
+              s.enter.preset,
+              amount({ ...s.enter, delay: s.enter.delay + delay }, t),
+            )
+          : sample("none", 1);
+        token.style.opacity = tokenMotion.opacity;
+        token.style.filter = tokenMotion.blur
+          ? `blur(${tokenMotion.blur}px)`
+          : "none";
+        token.style.clipPath = tokenMotion.clip;
+        token.style.transform = `translate(${tokenMotion.x}px,${tokenMotion.y}px) scale(${tokenMotion.scale}) rotate(${tokenMotion.rotation}deg)`;
+      }
+    if (s.count && !tokens.length) {
+      const progress = ease(
+        s.count.easing,
+        s.count.duration === 0
+          ? t >= s.count.start
+            ? 1
+            : 0
+          : (t - s.count.start) / s.count.duration,
+      );
+      const text = formatCount(
+        s.count,
+        s.count.from + (s.count.to - s.count.from) * progress,
+      );
+      if (el.textContent !== text) el.textContent = text;
+    } else if (s.replace?.length && !tokens.length) {
+      let text = s.text ?? "";
+      for (const entry of s.replace) if (t >= entry.at) text = entry.text;
+      if (el.textContent !== text) el.textContent = text;
     }
   }
   function seek(seconds) {

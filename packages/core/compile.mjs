@@ -36,11 +36,17 @@ function renderElement(el, assets) {
     "text-transform": el.text_transform,
     "-webkit-text-stroke": el.text_stroke,
   };
+  if (el.type === "group")
+    Object.assign(css, { left: 0, top: 0, width: "100%", height: "100%" });
   const style = Object.entries(css)
     .filter(([, v]) => v != null)
     .map(([k, v]) => `${k}:${v}`)
     .join(";");
   const common = `class="el el-${escapeHtml(el.type)} role-${escapeHtml(el.role || "none")}" data-id="${escapeHtml(el.id)}" data-motion-id="${escapeHtml(el.id)}" data-spec="${escapeHtml(JSON.stringify(el))}" style="${escapeHtml(style)}"`;
+  if (el.type === "group")
+    return `<div ${common}>${(el.children || [])
+      .map((child) => renderElement(child, assets))
+      .join("\n")}</div>`;
   if (el.type === "image")
     return `<img ${common} src="${escapeHtml(resolveSrc(el.src, assets))}" alt="${escapeHtml(el.alt || el.id)}" data-fit="${escapeHtml(el.fit || "contain")}">`;
   let content = escapeHtml(el.text || "");
@@ -63,6 +69,7 @@ function renderElement(el, assets) {
       })
       .join("");
   }
+  if (el.type === "svg") content = replaceAssets(el.svg || "", assets);
   return `<div ${common} data-shape="${escapeHtml(el.shape || "")}">${el.type === "html" ? replaceAssets(el.html || "", assets) : el.type === "shape" ? "" : content}</div>`;
 }
 export function compileToHtml(comp, { preview = false } = {}) {
@@ -92,5 +99,6 @@ export function compileToHtml(comp, { preview = false } = {}) {
   .el{position:absolute;margin:0;transform:translate(-50%,-50%)}.el-text,.el-caption{font-size:22px;font-family:${comp.theme.font_display};text-align:center;white-space:pre-wrap;padding:0 8px}.motion-token{display:inline-block;white-space:pre;will-change:transform,opacity,filter}
   .role-hero{font-size:72px;font-weight:800;line-height:1.05;max-width:86%}.role-sub{font-size:28px;font-weight:500;color:${comp.theme.muted};max-width:70%;line-height:1.35}.role-caption{font-size:22px;font-weight:600}.role-label{font-size:16px;font-weight:600;color:${comp.theme.accent}}
   .el-image{object-fit:contain;max-width:100%;max-height:100%}.el-image[data-fit=cover]{object-fit:cover}.el-shape[data-shape=circle],.el-shape[data-shape=pill]{border-radius:999px}
+  .el-group{left:0;top:0;width:100%;height:100%;transform:none;transform-origin:50% 50%;isolation:isolate}.el-svg svg{width:100%;height:100%;display:block}
   </style><script>window.__MOTION_COMP__=${json(comp)};</script><script>${runtime}</script></head><body data-preview="${preview ? 1 : 0}"><div id="stage">${scenes}</div><script>motion.mount();</script></body></html>`;
 }

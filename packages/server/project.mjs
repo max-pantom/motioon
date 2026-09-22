@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
@@ -39,13 +39,16 @@ async function body(req) {
 }
 export async function startProjectServer(
   file,
-  { port = 0, studio = false, snapshot } = {},
+  { port = 0, studio = false, snapshot, out } = {},
 ) {
   file = resolve(file);
   const root = dirname(file),
     token = randomUUID(),
     jobs = new Map();
   let url, activeJob;
+  const outFile = out
+    ? resolve(process.cwd(), out)
+    : ["out.mp4", "out.webm"].map((n) => resolve(root, n)).find(existsSync);
   const read = () => {
     const source = readFileSync(file, "utf8"),
       composition = snapshot || loadComposition(file);
@@ -138,6 +141,14 @@ export async function startProjectServer(
           `attachment; filename="motioon${extname(path)}"`,
         );
         return send(200, readFileSync(path), mime[extname(path)]);
+      }
+      if (pathname === "/out") {
+        if (!outFile || !existsSync(outFile) || !statSync(outFile).isFile())
+          return send(404, {
+            error:
+              "No rendered video. Render with `motioon render … -o out.mp4` (or pass --out).",
+          });
+        return send(200, readFileSync(outFile), mime[extname(outFile)]);
       }
       if (studio && pathname === "/") {
         return send(

@@ -30,6 +30,7 @@ node bin/motion.mjs new ./my-video
 node bin/motion.mjs studio ./my-video/motion.md
 node bin/motion.mjs validate ./my-video/motion.md
 node bin/motion.mjs inspect ./my-video/motion.md --frames 0,36,120,239
+node bin/motion.mjs frame ./my-video/motion.md 120 -o frame-120.png
 node bin/motion.mjs render ./my-video/motion.md -o ./my-video/video.mp4
 ```
 
@@ -42,7 +43,13 @@ The [format and runtime reference](SPEC.md) documents both supported scene forma
 
 - **Structured scenes**: YAML layers inside a `motion` fence. Studio can edit
   text, font size, color, position, size, scale, rotation, opacity, visibility,
-  scene/element timing and entrance animation settings.
+  scene/element timing and entrance animation settings. Layers include `text`,
+  `caption`, `image`, `svg`, `shape`, `html` and nested groups (`group` with
+  `children`). Motion lives in the file: `enter`/`exit` presets, per-property
+  keyframe tracks (`animate:` with `from`/`to`/`start`/`duration`/`easing`),
+  rising counters (`count:`), mid-scene text swaps (`replace:`), typewriter
+  reveals (`enter: type`), SVG stroke draws (`enter: draw`), and spring easing
+  (`spring` or `spring(frequency, damping)`).
 - **HTML scenes**: `## Scene: intro (0s-2s)` followed by HTML, CSS, SVG and scripts.
   Native CSS animations are explicitly paused and sought. Use `motion.onFrame`
   for custom deterministic drawing. Edit these scenes in the source editor.
@@ -52,8 +59,11 @@ fence, preserving surrounding prose and scenes. Saves validate before replacing
 the file, and revision checks prevent overwriting external changes.
 
 Examples: [structured product launch](examples/product-launch/motion.md),
-[raw HTML and CSS](examples/html-scenes/motion.md), and
-[kinetic typography showcase](examples/kinetic-showcase/motion.md).
+[raw HTML and CSS](examples/html-scenes/motion.md),
+[kinetic typography showcase](examples/kinetic-showcase/motion.md), and the
+[Sunset acceptance film](examples/sunset-launch/motion.md) — an 8-second, 4:5,
+60 fps launch video that exercises groups, keyframe tracks, a $2,400 counter, a
+typewriter reveal and an SVG stroke draw.
 
 ## Connect an AI agent
 
@@ -79,8 +89,10 @@ read it directly. No account or API key is needed for Motioon itself; the connec
 agent provides the language model. This build does not contain a pretend AI chat
 box or require a specific model provider.
 
-MCP tools: `motion_init`, `motion_read_spec`, `motion_validate`, `motion_describe`,
-`motion_list_assets`, `motion_compile`, `motion_patch`, `motion_inspect_frames`,
+MCP tools: `motion_init`, `motion_write`, `motion_read_spec`, `motion_validate`,
+`motion_describe`, `motion_list_assets`, `motion_compile`, `motion_patch`,
+`motion_add_scene`, `motion_add_element`, `motion_add_animation`,
+`motion_add_asset`, `motion_frame`, `motion_inspect_frames`,
 `motion_detect_overflow`, `motion_render`, `motion_preview`.
 
 Frame inspection returns actual PNG image content, plus semantic element bounds

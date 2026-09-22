@@ -26,13 +26,13 @@ Motioon is a local authoring tool, not a hosted sandbox for untrusted submission
 ---
 version: 1
 title: Product introduction
-aspect: "16:9"             # alias: aspect_ratio; also accepts "1280x720"
-width: 1280                # explicit width AND height override aspect
+aspect: "16:9" # alias: aspect_ratio; also accepts "1280x720"
+width: 1280 # explicit width AND height override aspect
 height: 720
-fps: 30                    # positive integer, up to 120; usually 30 or 60
-duration: 8                # seconds; also 8s, 8000ms, or 240f
+fps: 30 # positive integer, up to 120; usually 30 or 60
+duration: 8 # seconds; also 8s, 8000ms, or 240f
 background: "#f1eff9"
-safe_area: 64              # authoring guidance, not automatic padding
+safe_area: 64 # authoring guidance, not automatic padding
 theme:
   text: "#242035"
   muted: "#756d86"
@@ -48,9 +48,9 @@ assets:
 # Assets may alternatively be a list of {id, src, type} as in motion-spec.
 audio:
   - src: asset:music
-    at: 0                  # placement in composition, seconds
-    trim: 0                # skip this much source audio
-    duration: 8            # optional source trim duration
+    at: 0 # placement in composition, seconds
+    trim: 0 # skip this much source audio
+    duration: 8 # optional source trim duration
     volume: 0.5
 ---
 ```
@@ -70,6 +70,7 @@ A complete valid scene:
 
 ````markdown
 ## scene: intro
+
 ```motion
 duration: 3
 elements:
@@ -89,26 +90,64 @@ elements:
 ````
 
 Element IDs are unique throughout a composition. Types: `text`, `caption`,
-`image`, `shape`, `html`. Text roles supply default type sizes: `hero` (72),
-`sub` (28), `caption` (22), `label` (16). Override with `font_size`, `font_weight`,
-`color`, `max_width`. Position `x`/`y` is the element center; numbers mean pixels,
-percent strings are relative to canvas. `w`/`h` accept either. Other properties:
-`opacity` (0–1), `scale`, `rotation` (degrees), `z`, `hidden`, `radius`.
+`image`, `svg`, `shape`, `html`, `group`. Text roles supply default type sizes:
+`hero` (72), `sub` (28), `caption` (22), `label` (16). Override with `font_size`,
+`font_weight`, `color`, `max_width`. Position `x`/`y` is the element center;
+numbers mean pixels, percent strings are relative to canvas. `w`/`h` accept
+either. Other properties: `opacity` (0–1), `scale`, `rotation` (degrees), `blur`
+(px, static), `z`, `hidden`, `radius`.
 
 - Images use `src: asset:logo` or `src: asset://logo` or a local path, and
   `fit: contain|cover`.
 - Shapes use `shape: rect|circle|pill`, `fill`, `w`, `h`, `radius`.
+- SVG (`type: svg`) holds raw inline SVG in a `svg:` block; shapes animate with
+  the `draw` preset. Width/height are inherited from `w`/`h`.
+- Groups (`type: group`) hold other elements in a `children:` list. The group is
+  a full-canvas container: a group-level `opacity`, `scale`, `rotation` or
+  entrance transform applies to everything inside, and child elements keep
+  their own position and animation. Child IDs must be unique across the whole
+  composition.
 - HTML uses YAML block text: `html: |` followed by indented HTML/SVG.
 - `at` is scene-local. Omitted element duration fills the remainder of its scene.
 - `enter` and `exit`: `preset duration delay easing`. Presets: `fade`, `fade-up`,
   `fade-down`, `scale-fade`, `blur-in`, `wipe-left`, `wipe-up`, `slide-left`,
-  `slide-right`, `pop`, `zoom-out`, `rotate-in`, `none`. Duration and delay can
-  use seconds, ms or frames. Easings: `linear`, `ease-out`, `ease-in`,
-  `ease-in-out`, `expo.out`. An object with those four fields also works.
+  `slide-right`, `pop`, `zoom-out`, `rotate-in`, `reveal`, `type`, `draw`,
+  `none`. Duration and delay can use seconds, ms or frames. Easings: `linear`,
+  `ease-out`, `ease-in`, `ease-in-out`, `expo.out`, `spring`, or
+  `spring(frequency, damping)` (an analytic overshoot; quote `spring(3, 8)` in
+  flow YAML). An object with those four fields also works. `reveal` wipes in
+  top-down, `type` reveals split characters one by one, `draw` traces SVG
+  strokes via dash-offset.
 - Text can set `split: words|chars|lines` and `stagger: 0.06` to animate tokens
   independently with the chosen entrance preset. Styling also supports
   `letter_spacing`, `line_height`, `text_transform`, `text_stroke`, `shadow`, and
   `blend_mode`.
+- Keyframe tracks (`animate:`): animate a property from one value to another with
+  its own start, duration and easing. Each property takes an object or a
+  `[from, to]` pair; shared defaults are `start: 0`, `duration: 0.6`,
+  `easing: ease-out`.
+
+  ```yaml
+  - id: title
+    type: text
+    text: Hello
+    animate:
+      opacity: { from: 0, to: 1, start: 0.2, duration: 0.5, easing: expo.out }
+      y: [24, 0]
+  ```
+
+  Animatable properties: `opacity`, `x`, `y`, `scale`, `rotation`, `blur`.
+  Tracks are relative: `x`/`y` offset the element position, `scale`/`opacity`
+  multiply, `rotation`/`blur` add. Tracks combine with `enter`/`exit` presets
+  and with JavaScript `motion.animate`.
+
+- `count:` turns a text element into a rising number. Fields: `to`, `from?`,
+  `start?`, `duration?`, `easing?`, `prefix?`, `suffix?`, `decimals?`,
+  `thousands?`. The default writes thousands separators and no decimals (e.g.
+  `$2,400`). Do not combine `count` with `split`.
+- `replace:` swaps a text element's content at fixed local times. Accepts a
+  single `{at, text}` or a list, sorted automatically. Do not combine with
+  `split` or `count`.
 - Scene transitions: `cut`, `fade`, `wipe-left`, `wipe-up`, `slide-left`, or
   `zoom`, followed by duration. Fade is a fade-in against the
   background, not an automatic overlap/crossfade. Use explicit overlapping scenes
@@ -118,6 +157,7 @@ percent strings are relative to canvas. `w`/`h` accept either. Other properties:
 
 ```markdown
 ## Scene: intro (0s-2s)
+
 <style>
   @keyframes enter { from { opacity: 0; transform: translateY(20px); }
                      to { opacity: 1; transform: translateY(0); } }
@@ -126,6 +166,7 @@ percent strings are relative to canvas. `w`/`h` accept either. Other properties:
 <h1 class="headline" data-motion="headline">Hello.</h1>
 
 ## Scene: product (2s-5s)
+
 <img data-motion="product" src="asset://logo" width="200">
 ```
 
@@ -145,9 +186,19 @@ readiness management by the author; they are not a tested first-class V1 feature
 ```html
 <script>
   motion.onFrame(({ time, frame, fps, duration, progress }) => {
-    document.querySelector('#headline').style.opacity = motion.sequence(0, .6, time);
+    document.querySelector("#headline").style.opacity = motion.sequence(
+      0,
+      0.6,
+      time,
+    );
   });
-  motion.animate('#badge', { opacity: [0, 1], y: [30, 0], start: 1, duration: .5, ease: 'expo.out' });
+  motion.animate("#badge", {
+    opacity: [0, 1],
+    y: [30, 0],
+    start: 1,
+    duration: 0.5,
+    ease: "expo.out",
+  });
 </script>
 ```
 
@@ -165,7 +216,7 @@ API:
 - `motion.stagger(index, interval=.1)`: offset in seconds.
 - `motion.spring({time, frequency=3, damping=8})`: analytic damped oscillation.
 - `motion.animate(selector, {opacity:[0,1,.8,1], x:[0,20,0], y:[20,0], scale:[.9,1],
-  rotation:[0,10], start, duration, ease})`: numeric tracks for raw HTML nodes.
+rotation:[0,10], start, duration, ease})`: numeric tracks for raw HTML nodes.
   Arrays may contain any number of evenly spaced keyframes. The helper owns the
   selected node's transform; use a child wrapper if needed.
 - `motion.getElements()`: semantic element bounds and canvas overflow.
@@ -182,7 +233,8 @@ use frontmatter audio. There is no automatic beat detection in V1.
 `ceil(duration * fps)` frames are rendered, with indices 0 through N−1. Exported
 duration is N/fps. `--frames 30:90` includes 30 and excludes 90. The last state is
 held on playback completion. `--frames 0,30,60` for inspect means three frame
-indices, not seconds.
+indices, not seconds. `motion frame <index>` (or `motioon frame <file> <index>`)
+writes one exact PNG frame to `-o`, useful for fast iteration between renders.
 
 The renderer hashes source, runtime, browser version and local project files.
 Cached PNGs are reused only when that key matches; arbitrary JavaScript means

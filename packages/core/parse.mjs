@@ -31,9 +31,11 @@ export function parseMotionShorthand(value, fps = 30) {
     typeof value === "object"
       ? value
       : (() => {
-          const [preset, duration = 0.4, delay = 0, easing = "ease-out"] =
-            String(value).split(/\s+/);
-          return { preset, duration, delay, easing };
+          const parts = String(value).trim().split(/\s+/);
+          const preset = parts[0],
+            duration = parts[1] ?? 0.4,
+            delay = parts[2] ?? 0;
+          return { preset, duration, delay, easing: parts.slice(3).join(" ") };
         })();
   return {
     preset: v.preset || "fade",
@@ -41,6 +43,73 @@ export function parseMotionShorthand(value, fps = 30) {
     delay: parseTime(v.delay ?? 0, fps),
     easing: v.easing || "ease-out",
   };
+}
+export function parseEasing(name) {
+  return name == null || typeof name !== "string" ? "ease-out" : name;
+}
+export function parseAnimate(value, fps = 30) {
+  if (value == null) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error(
+      "animate must be a mapping of property to {from, to, start, duration, easing}.",
+    );
+  const allowed = new Set(["opacity", "x", "y", "scale", "rotation", "blur"]);
+  const tracks = [];
+  for (const [prop, spec] of Object.entries(value)) {
+    if (!allowed.has(prop))
+      throw new Error(
+        `animate.${prop} is not animatable. Use: ${[...allowed].join(", ")}.`,
+      );
+    const v = Array.isArray(spec) ? { from: spec[0], to: spec[1] } : spec;
+    if (!v || typeof v !== "object")
+      throw new Error(
+        `animate.${prop} needs from and to, e.g. {from: 0, to: 1}.`,
+      );
+    for (const key of ["from", "to"])
+      if (typeof v[key] !== "number" || !Number.isFinite(v[key]))
+        throw new Error(`animate.${prop}.${key} must be a finite number.`);
+    tracks.push({
+      prop,
+      from: v.from,
+      to: v.to,
+      start: parseTime(v.start ?? 0, fps),
+      duration: parseTime(v.duration ?? 0.6, fps),
+      easing: parseEasing(v.easing),
+    });
+  }
+  return tracks.length ? tracks : undefined;
+}
+export function parseCount(value, fps = 30) {
+  if (value == null) return undefined;
+  if (typeof value !== "object")
+    throw new Error("count must be a mapping like {to: 2400, duration: 1}.");
+  if (typeof value.to !== "number" || !Number.isFinite(value.to))
+    throw new Error("count.to must be a finite number.");
+  return {
+    from: typeof value.from === "number" ? value.from : 0,
+    to: value.to,
+    start: parseTime(value.start ?? 0, fps),
+    duration: parseTime(value.duration ?? 1, fps),
+    easing: parseEasing(value.easing),
+    prefix: value.prefix == null ? "" : String(value.prefix),
+    suffix: value.suffix == null ? "" : String(value.suffix),
+    decimals: value.decimals == null ? 0 : Number(value.decimals),
+    thousands: value.thousands !== false,
+  };
+}
+export function parseReplace(value, fps = 30) {
+  if (value == null) return undefined;
+  const list = Array.isArray(value) ? value : [value];
+  const entries = list
+    .filter((v) => v != null)
+    .map((v) => {
+      if (typeof v !== "object" || typeof v.text !== "string")
+        throw new Error("replace entries need {at: seconds, text: string}.");
+      return { at: parseTime(v.at ?? 0, fps), text: v.text };
+    });
+  if (!entries.length) return undefined;
+  entries.sort((a, b) => a.at - b.at);
+  return entries;
 }
 export function sourceParts(source) {
   const front = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -179,21 +248,37 @@ export function parseMotionMarkdown(source) {
         : { type, duration: parseTime(td, fps) };
     if (data.elements != null && !Array.isArray(data.elements))
       throw new Error(`Scene '${block.id}': elements must be a list.`);
-    const elements = (data.elements || []).map((el, i) => {
+    const parseElement = (el, i, parentId) => {
       if (!el || typeof el !== "object")
         throw new Error(`Scene '${block.id}': element ${i} must be a mapping.`);
-      const at = parseTime(el.at ?? 0, fps);
-      return {
+      const base = {
         ...el,
-        id: el.id || `${block.id}-${i}`,
+        id: el.id || `${parentId ?? block.id}-${i}`,
         type: el.type || "text",
-        at,
-        duration: parseTime(el.duration ?? Math.max(0, duration - at), fps),
+        at: parseTime(el.at ?? 0, fps),
+        duration: parseTime(
+          el.duration ?? Math.max(0, duration - parseTime(el.at ?? 0, fps)),
+          fps,
+        ),
         enter: parseMotionShorthand(el.enter, fps),
         exit: parseMotionShorthand(el.exit, fps),
         z: el.z ?? i,
       };
-    });
+      if (base.type === "group") {
+        if (!Array.isArray(el.children))
+          throw new Error(
+            `Scene '${block.id}': group '${base.id}' needs a children list.`,
+          );
+        base.children = el.children.map((child, j) =>
+          parseElement(child, j, base.id),
+        );
+      }
+      if (el.animate != null) base.animate = parseAnimate(el.animate, fps);
+      if (el.count != null) base.count = parseCount(el.count, fps);
+      if (el.replace != null) base.replace = parseReplace(el.replace, fps);
+      return base;
+    };
+    const elements = (data.elements || []).map((el, i) => parseElement(el, i));
     return {
       id: block.id,
       start,

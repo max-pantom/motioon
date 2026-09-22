@@ -36,16 +36,48 @@ or declared asset ID, and use local fonts for reproducibility. Network resources
 are blocked during render. Audio belongs in frontmatter tracks; embedded video
 and audio elements are outside V1 scope.
 
-Use CSS animations or `motion.onFrame`/`motion.animate` for motion. Compute state
-from absolute time, not wall-clock timers or incremental state. Keep readable
-text within the canvas and allow entrance motion to settle before a cut. The
-Studio updates structured properties directly in the markdown; `motion_patch`
-does the same, without unused sidecars. Raw HTML is edited as source.
+Use CSS animations, `motion.onFrame`/`motion.animate`, or the file-format
+`animate:` keyframe tracks for motion. Compute state from absolute time, not
+wall-clock timers or incremental state. Keep readable text within the canvas and
+allow entrance motion to settle before a cut. The Studio updates structured
+properties directly in the markdown; `motion_patch`, `motion_add_scene`,
+`motion_add_element`, `motion_add_animation` and `motion_add_asset` do the same,
+without unused sidecars. Use `motion_write` to replace an entire `motion.md`
+source atomically (e.g. a clean slate) after `motion_init`. Raw HTML is edited
+as source.
 
 For kinetic typography, use `split: words|chars|lines` with a small `stagger`
-(usually 0.035–0.09 seconds). Combine it with `slide-left`, `rotate-in`, `pop`,
-or `blur-in`. Use `wipe-up`, `slide-left`, or `zoom` scene transitions with
-restraint. Multi-stop arrays in `motion.animate` support overshoot and settle.
+(usually 0.035–0.09 seconds), or `enter: type` for a typewriter reveal. Combine
+either with `slide-left`, `rotate-in`, `pop`, or `blur-in`. Use `wipe-up`,
+`slide-left`, `reveal`, or `zoom` scene and element motion with restraint. SVG
+strokes can be traced with `enter: draw`, counters with `count: {to, prefix}`,
+and multi-stop arrays in `motion.animate` support overshoot and settle.
+
+## Taste
+
+These rules make minor work look deliberate:
+
+- Don't animate everything. Establish hierarchy before motion: per scene, pick
+  one focal movement and hold everything else still.
+- Use holds. Let an entrance settle for at least a beat before the next event;
+  silence reads as confidence. The last frame should feel finished, not mid-flight.
+- Prefer one focal movement per scene. Ambition is one idea moving well, not
+  every element choreographing.
+- Use easing consistently across the whole film — usually `ease-out` or
+  `expo.out` everywhere. Reserve `spring(f, d)` for a single playful accent (a
+  logo pop, a settle) and `ease-in` for exits only.
+- Render checkpoints frequently: after each scene completes,
+  `motioon validate` then `motioon frame` or inspect the first, middle and last
+  frame of every scene before touching the next scene.
+- Keep text within safe bounds (respect `safe_area`, centered short lines for
+  hero text) and never allow accidental overlaps (`motion_detect_overflow`).
+- Counters and draw effects are accents, not defaults. One counter or one draw
+  per film is tasteful; several is gimmick.
+- Match motion to meaning: numbers count up (expo.out), wordmarks type or draw
+  in, entrances are snappy (≤ 0.9s), holds are long.
+- Prefer structured scenes for most shots; drop to raw HTML scenes only when
+  the geometry genuinely needs it. Reuse one easing and one entrance family so
+  the film reads as one design system.
 
 The engine exports MP4 and WebM, not generative footage. It does not invoke an LLM
 itself: the connected coding agent writes the composition. Do not claim automatic

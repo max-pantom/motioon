@@ -12,7 +12,7 @@ import {
   compileFile,
   checkAssets,
 } from "../core/index.mjs";
-import { patchFile } from "../core/patch.mjs";
+import { patchFile, insertFile, saveSource } from "../core/patch.mjs";
 import { renderVideo, inspectFrames } from "../renderer/render.mjs";
 import { startProjectServer } from "../server/project.mjs";
 const text = (value) => ({
@@ -23,6 +23,7 @@ const text = (value) => ({
     },
   ],
 });
+const reduceInfo = ({ buffer, ...info }) => ({ ...info, buffer: undefined });
 export function createMcpServer() {
   const server = new McpServer({ name: "motioon", version: "0.2.0" }),
     previews = new Map();
@@ -149,6 +150,104 @@ export function createMcpServer() {
       to: z.number().int().positive().optional(),
     },
     async (a) => text(await renderVideo(a.file, a)),
+  );
+  register(
+    "motion_write",
+    "Replace the entire motion.md source atomically (validates first). Use to create a clean slate or apply a wholesale rewrite.",
+    { ...file, source: z.string() },
+    (a) => text({ revision: saveSource(a.file, a.source) }),
+  );
+  register(
+    "motion_add_asset",
+    "Declare a project asset (id + src, optionally type) in motion.md frontmatter.",
+    {
+      ...file,
+      id: z.string().describe("Unique asset id, letters/digits/-/_"),
+      src: z.string(),
+      type: z.string().optional(),
+    },
+    async (a) =>
+      text(
+        insertFile(a.file, { asset: { id: a.id, src: a.src, type: a.type } }),
+      ),
+  );
+  register(
+    "motion_add_scene",
+    "Append a scene to the composition. Extends duration if it runs past the project end.",
+    {
+      ...file,
+      scene: z
+        .object({
+          id: z.string(),
+          at: z.union([z.number(), z.string()]).optional(),
+          duration: z.union([z.number(), z.string()]).optional(),
+          transition: z.union([z.string(), z.record(z.unknown())]).optional(),
+          elements: z.array(z.record(z.unknown())).optional(),
+        })
+        .passthrough(),
+    },
+    async (a) => text(insertFile(a.file, { scene: a.scene })),
+  );
+  register(
+    "motion_add_element",
+    "Add an element to a structured scene (id, type, position, animation).",
+    {
+      ...file,
+      scene: z.string(),
+      element: z.record(z.unknown()),
+    },
+    async (a) =>
+      text(insertFile(a.file, { scene: a.scene, element: a.element })),
+  );
+  register(
+    "motion_add_animation",
+    "Animate a property of an element with {from, to, start?, duration?, easing?} tracks.",
+    {
+      ...file,
+      scene: z.string(),
+      element: z.string(),
+      animation: z.record(
+        z.union([
+          z.object({
+            from: z.number(),
+            to: z.number(),
+            start: z.union([z.number(), z.string()]).optional(),
+            duration: z.union([z.number(), z.string()]).optional(),
+            easing: z.string().optional(),
+          }),
+          z.tuple([z.number(), z.number()]),
+        ]),
+      ),
+    },
+    async (a) =>
+      text(
+        insertFile(a.file, {
+          scene: a.scene,
+          element: a.element,
+          animation: a.animation,
+        }),
+      ),
+  );
+  register(
+    "motion_frame",
+    "Render one exact PNG frame. Returns the image plus element bounds and overflow.",
+    {
+      ...file,
+      frame: z.number().int().nonnegative(),
+    },
+    async (a) => {
+      const [result] = await inspectFrames(a.file, { frames: [a.frame] });
+      return {
+        content: [
+          { type: "text", text: JSON.stringify(reduceInfo(result)) },
+          {
+            type: "image",
+            data: result.buffer.toString("base64"),
+            mimeType: "image/png",
+          },
+        ],
+      };
+    },
   );
   register(
     "motion_preview",

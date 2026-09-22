@@ -55,8 +55,9 @@ function usage() {
   motioon validate [motion.md]            Validate timing and local assets
   motioon describe [motion.md]            Read the normalized composition
   motioon compile [motion.md] -o <dir>     Write standalone seekable HTML
-  motioon studio [motion.md] [--port 4400] Open the local editing studio
+  motioon studio [motion.md] [--port 4400] [--out video.mp4] Open the local editing studio
   motioon inspect [motion.md] --frames 0,30,60 [-o frames]
+  motioon frame [motion.md] 120 [-o out.png]      Render one PNG frame
   motioon render [motion.md] -o out.mp4 [--format mp4|webm]
                  [--quality draft|high] [--workers 2] [--frames 0:60] [--no-cache]
   motioon agent                          Print skill and MCP connection details
@@ -133,8 +134,11 @@ export async function main(argv = process.argv.slice(2)) {
     const service = await startProjectServer(file, {
       port: Number(option(argv, "--port", 4400)),
       studio: true,
+      out: option(argv, "--out", undefined),
     });
     console.log(`Motioon Studio → ${service.url}\nProject: ${file}`);
+    if (option(argv, "--out", undefined))
+      console.log(`Video         → ${service.url}/out`);
     for (const sig of ["SIGINT", "SIGTERM"])
       process.once(sig, async () => {
         await service.close();
@@ -155,6 +159,36 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(
       JSON.stringify(
         result.map(({ buffer, ...r }) => r),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  if (cmd === "frame") {
+    const numeric = (s) => Number.isInteger(Number(s)) && Number(s) >= 0;
+    const hasFile = argv[1] && !argv[1].startsWith("-") && !numeric(argv[1]);
+    const localFile = resolve(hasFile ? argv[1] : "motion.md");
+    const index = Number(hasFile ? argv[2] : argv[1]);
+    if (!Number.isInteger(index) || index < 0)
+      throw new Error("Provide a frame index, e.g. motioon frame 120.");
+    const out = resolve(
+      option(
+        argv,
+        "-o",
+        join(dirname(localFile), ".motioon", `frame-${index}.png`),
+      ),
+    );
+    const [result] = await inspectFrames(localFile, { frames: [index] });
+    writeFileSync(out, result.buffer);
+    console.log(
+      JSON.stringify(
+        {
+          out,
+          frame: result.frame,
+          time: result.time,
+          overflow: result.overflow,
+        },
         null,
         2,
       ),
