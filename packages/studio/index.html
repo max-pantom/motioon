@@ -10,43 +10,45 @@
   <body>
     <a class="skip" href="#preview">Skip to preview</a>
     <header class="app-header">
-      <a class="brand" href="/" aria-label="Motioon Studio home"
-        ><svg viewBox="0 0 32 32" aria-hidden="true">
-          <rect width="32" height="32" rx="10" fill="currentColor" />
-          <path
-            d="M8 22V12h4v3l4-3v10m0-7 4-3h4v10"
-            fill="none"
-            stroke="white"
-            stroke-width="3"
-            stroke-linejoin="round"
-          /></svg
-        ><span>motioon<span class="brand-studio">studio</span></span></a
-      >
-      <div class="project-heading">
-        <h1 id="project-title">Opening project…</h1>
-        <span class="save-state" id="save-state">Local project</span>
-      </div>
-      <div class="header-actions">
-        <button
-          id="undo"
-          class="icon-button"
-          aria-label="Undo edit"
-          title="Undo"
-          disabled
+      <div class="header-frame">
+        <a class="brand" href="/" aria-label="Motioon Studio home"
+          ><svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="10" fill="currentColor" />
+            <path
+              d="M8 22V12h4v3l4-3v10m0-7 4-3h4v10"
+              fill="none"
+              stroke="white"
+              stroke-width="3"
+              stroke-linejoin="round"
+            /></svg
+          ><span>motioon<span class="brand-studio">studio</span></span></a
         >
-          ↶</button
-        ><button
-          id="redo"
-          class="icon-button"
-          aria-label="Redo edit"
-          title="Redo"
-          disabled
-        >
-          ↷</button
-        ><button id="source-open" class="secondary">Edit source</button
-        ><button id="export-open" class="primary">
-          <span aria-hidden="true">↑</span> Export video
-        </button>
+        <div class="project-heading">
+          <h1 id="project-title">Opening project…</h1>
+          <span class="save-state" id="save-state">Local project</span>
+        </div>
+        <div class="header-actions">
+          <button
+            id="undo"
+            class="icon-button"
+            aria-label="Undo edit"
+            title="Undo"
+            disabled
+          >
+            ↶</button
+          ><button
+            id="redo"
+            class="icon-button"
+            aria-label="Redo edit"
+            title="Redo"
+            disabled
+          >
+            ↷</button
+          ><button id="source-open" class="secondary">Edit source</button
+          ><button id="export-open" class="primary">
+            <span aria-hidden="true">↑</span> Export video
+          </button>
+        </div>
       </div>
     </header>
     <div class="workspace">
@@ -94,43 +96,57 @@
               scrolling="no"
             ></iframe>
           </div>
-        </div>
-        <div class="transport">
-          <button
-            id="previous-frame"
-            class="icon-button"
-            aria-label="Previous frame"
-          >
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path
-                d="M5 5v14m13-14L8 12l10 7z"
-                stroke="currentColor"
-                stroke-width="1.6"
-                fill="none"
-                stroke-linejoin="round"
-              />
-            </svg></button
-          ><button id="play" class="play-button" aria-label="Play video">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m9 5 11 7-11 7z" fill="currentColor" />
-            </svg></button
-          ><button id="next-frame" class="icon-button" aria-label="Next frame">
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path
-                d="M19 5v14M6 5l10 7-10 7z"
-                stroke="currentColor"
-                stroke-width="1.6"
-                fill="none"
-                stroke-linejoin="round"
-              />
-            </svg></button
-          ><span class="transport-divider"></span
-          ><output id="timecode">00:00.00</output
-          ><span class="muted" id="total-time"></span
-          ><span class="transport-divider"></span
-          ><label class="sound-toggle"
-            ><input type="checkbox" id="sound" checked /> Audio</label
-          >
+          <div class="transport">
+            <button
+              id="previous-frame"
+              class="icon-button"
+              aria-label="Previous frame"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 5v14m13-14L8 12l10 7z"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  fill="none"
+                  stroke-linejoin="round"
+                />
+              </svg></button
+            ><button id="play" class="play-button" aria-label="Play video">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 5 11 7-11 7z" fill="currentColor" />
+              </svg></button
+            ><button
+              id="next-frame"
+              class="icon-button"
+              aria-label="Next frame"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <path
+                  d="M19 5v14M6 5l10 7-10 7z"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  fill="none"
+                  stroke-linejoin="round"
+                />
+              </svg></button
+            ><span class="transport-divider"></span
+            ><output id="timecode">00:00.00</output
+            ><span class="muted" id="total-time"></span
+            ><span class="transport-divider"></span
+            ><label class="sound-toggle"
+              ><input type="checkbox" id="sound" checked /> Audio</label
+            >
+          </div>
         </div>
         <div class="canvas-caption">
           <span id="frame-counter">Frame 0</span
@@ -220,7 +236,30 @@
           </select></label
         >
       </div>
-      <progress id="export-progress" max="1" value="0" hidden></progress>
+      <figure
+        id="export-progress"
+        class="export-ring"
+        role="progressbar"
+        aria-label="Render progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        hidden
+      >
+        <svg viewBox="0 0 96 96">
+          <circle class="export-ring-track" cx="48" cy="48" r="42"></circle>
+          <circle
+            class="export-ring-arc"
+            id="export-arc"
+            cx="48"
+            cy="48"
+            r="42"
+          ></circle>
+        </svg>
+        <figcaption>
+          <strong id="export-percent">0</strong><span>%</span>
+        </figcaption>
+      </figure>
       <p id="export-status" role="status"></p>
       <div class="dialog-actions">
         <a id="download" class="primary" hidden>Download video</a

@@ -459,16 +459,25 @@ $("redo").onclick = async () => {
   }
 };
 const Motion = globalThis.Motion;
+const RING = 2 * Math.PI * 42;
 const setProgress = (value) => {
-  const bar = $("export-progress");
-  if (Motion?.animate) {
-    const anim = Motion.animate(
-      bar,
-      { value },
-      { duration: 0.35, ease: "easeOut" },
-    );
-    if (value >= 1 || value <= 0) anim.complete();
-  } else bar.value = value;
+  const v = Math.max(0, Math.min(1, value));
+  const ring = $("export-progress");
+  const arc = $("export-arc");
+  const pct = $("export-percent");
+  if (ring) ring.setAttribute("aria-valuenow", Math.round(v * 100));
+  if (arc) {
+    const target = RING * (1 - v);
+    if (Motion?.animate) {
+      const anim = Motion.animate(
+        arc,
+        { strokeDashoffset: target },
+        { duration: 0.35, ease: "easeOut" },
+      );
+      if (v >= 1 || v <= 0) anim.complete();
+    } else arc.style.strokeDashoffset = target;
+  }
+  if (pct) pct.textContent = Math.round(v * 100);
 };
 $("export-open").onclick = () => {
   if (dirty) {
@@ -486,8 +495,8 @@ $("render").onclick = async () => {
   const button = $("render");
   button.disabled = true;
   $("download").hidden = true;
+  setProgress(0);
   $("export-progress").hidden = false;
-  $("export-progress").value = 0;
   $("export-status").textContent = "Preparing your video…";
   try {
     const job = await request("/api/render", {
