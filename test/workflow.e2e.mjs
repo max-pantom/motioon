@@ -273,7 +273,97 @@ test(
   },
 );
 test(
-  "MCP client negotiates and uses real validation, patch and image tools",
+  "Studio server exposes /api/op so chrome rides the same command bus",
+  { timeout: 30000 },
+  async () => {
+    const p = setup();
+    const service = await startProjectServer(p.file, { studio: true });
+    try {
+      const info = await fetch(`${service.url}/api/project`);
+      const { token } = await info.json();
+      const op = await fetch(`${service.url}/api/op`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-motion-token": token,
+        },
+        body: JSON.stringify({
+          command: {
+            op: "set",
+            layer: "title",
+            prop: "text",
+            value: "Via /api/op",
+          },
+        }),
+      });
+      assert.equal(op.status, 200);
+      const flown = await op.json();
+      assert.equal(flown.result.dirty, true);
+      assert.equal(
+        loadComposition(p.file).scenes[0].elements[0].text,
+        "Via /api/op",
+      );
+      const undo = await fetch(`${service.url}/api/op`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-motion-token": token,
+        },
+        body: JSON.stringify({ command: { op: "undo" } }),
+      });
+      assert.equal((await undo.json()).result.result.restored, true);
+      assert.equal(loadComposition(p.file).scenes[0].elements[0].text, "Hello");
+    } finally {
+      await service.close();
+      p.close();
+    }
+  },
+);
+
+test(
+  "Compiled page honors the seek/select postMessage contract",
+  { timeout: 30000 },
+  async () => {
+    const p = setup();
+    const service = await startProjectServer(p.file),
+      browser = await launchBrowser();
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 320, height: 180 },
+      });
+      await page.goto(service.url);
+      await page.evaluate(() => motion.seekAsync(0));
+      await page.evaluate(() =>
+        window.postMessage({ type: "seek", t: 0.8 }, "*"),
+      );
+      await page.waitForFunction(
+        () => Math.abs(motion.currentTime - 0.8) < 1e-6,
+      );
+      assert.equal(
+        await page.locator("[data-id=title]").evaluate((e) => e.style.opacity),
+        "0.7",
+      );
+      const highlighted = await page.evaluate(async () => {
+        window.postMessage({ type: "select", id: "title" }, "*");
+        await new Promise((r) => setTimeout(r, 50));
+        return document
+          .querySelector("[data-id=title]")
+          .style.outline.includes("rgb(10, 132, 255)");
+      });
+      assert.equal(highlighted, true);
+      await page.evaluate(() =>
+        window.postMessage({ type: "seek", t: 0 }, "*"),
+      );
+      await page.waitForFunction(() => motion.currentTime < 1e-6);
+    } finally {
+      await browser.close();
+      await service.close();
+      p.close();
+    }
+  },
+);
+test(
+  "MCP exposes exactly the 4 editor tools and runs the command bus end to end",
   { timeout: 60000 },
   async () => {
     const p = setup();
@@ -286,40 +376,87 @@ test(
     try {
       await client.connect(transport);
       const { tools } = await client.listTools();
-      assert.ok(tools.some((t) => t.name === "motion_render"));
-      const valid = await client.callTool({
-        name: "motion_validate",
+      const names = tools.map((t) => t.name);
+      for (const editor of [
+        "motion_editor_state",
+        "motion_editor_schema",
+        "motion_editor_run",
+        "motion_editor_batch",
+      ])
+        assert.ok(names.includes(editor), `missing ${editor}`);
+      for (const pipeline of [
+        "motion_validate",
+        "motion_compile",
+        "motion_inspect_frames",
+        "motion_render",
+      ])
+        assert.ok(names.includes(pipeline), `missing ${pipeline}`);
+      assert.equal(names.includes("motion_patch"), false);
+      assert.equal(names.includes("motion_write"), false);
+      assert.equal(names.includes("motion_add_animation"), false);
+
+      const schema = await client.callTool({
+        name: "motion_editor_schema",
+        arguments: {},
+      });
+      const doc = JSON.parse(schema.content[0].text);
+      assert.ok(doc.document.some((o) => o.name === "set"));
+      assert.ok(doc.examples.length >= 3);
+
+      const state = await client.callTool({
+        name: "motion_editor_state",
         arguments: { file: p.file },
       });
-      assert.equal(JSON.parse(valid.content[0].text).ok, true);
-      const patched = await client.callTool({
-        name: "motion_patch",
+      const before = JSON.parse(state.content[0].text);
+      assert.equal(before.duration, 1);
+      assert.ok(before.layers.some((l) => l.id === "title"));
+
+      const set = await client.callTool({
+        name: "motion_editor_run",
         arguments: {
           file: p.file,
-          scene: "intro",
-          element: "title",
-          set: { text: "From an agent" },
+          op: "set",
+          layer: "title",
+          prop: "text",
+          value: "From the bus",
         },
       });
-      assert.ok(!patched.isError);
+      assert.ok(!set.isError);
+      const after = JSON.parse(set.content[0].text);
+      assert.equal(after.dirty, true);
+      assert.equal(
+        after.state.layers.find((l) => l.id === "title").text,
+        "From the bus",
+      );
       assert.equal(
         loadComposition(p.file).scenes[0].elements[0].text,
-        "From an agent",
+        "From the bus",
       );
-      const frames = await client.callTool({
-        name: "motion_inspect_frames",
-        arguments: { file: p.file, frames: [15] },
+
+      const batch = await client.callTool({
+        name: "motion_editor_batch",
+        arguments: {
+          file: p.file,
+          commands: [
+            { op: "seek", t: 0.5 },
+            { op: "set", layer: "title", prop: "x", value: 40 },
+            { op: "undo" },
+          ],
+        },
       });
-      assert.ok(
-        frames.content.some(
-          (c) => c.type === "image" && c.mimeType === "image/png",
-        ),
-      );
-      const bad = await client.callTool({
-        name: "motion_patch",
-        arguments: { file: p.file, scene: "missing", set: { duration: 2 } },
+      assert.ok(!batch.isError);
+      const flown = JSON.parse(batch.content[0].text);
+      assert.equal(flown.results.length, 3);
+      assert.equal(flown.results[0].dirty, false);
+      assert.equal(flown.results[1].dirty, true);
+      assert.equal(flown.results[2].op, "undo");
+      assert.equal(loadComposition(p.file).scenes[0].elements[0].x, undefined);
+
+      const unknown = await client.callTool({
+        name: "motion_editor_run",
+        arguments: { file: p.file, op: "nope", layer: "title" },
       });
-      assert.equal(bad.isError, true);
+      assert.equal(unknown.isError, true);
     } finally {
       await client.close();
       p.close();

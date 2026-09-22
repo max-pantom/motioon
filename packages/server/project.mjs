@@ -85,6 +85,13 @@ export async function startProjectServer(
           patchFile(file, data);
           return send(200, read());
         }
+        if (pathname === "/api/op") {
+          const { sessionFor, runCommand, describe } = await import(
+            "../editor/editor.mjs"
+          );
+          const result = runCommand(sessionFor(file), data.command || data);
+          return send(200, { result, state: describe(sessionFor(file)) });
+        }
         if (pathname === "/api/source") {
           saveSource(file, data.source, data.revision);
           return send(200, read());

@@ -106,10 +106,7 @@ function setTime(value) {
     0,
     Math.min((Math.ceil(comp.duration * comp.fps) - 1) / comp.fps, value),
   );
-  $("composition").contentWindow.postMessage(
-    { type: "motion:seek", time },
-    "*",
-  );
+  $("composition").contentWindow.postMessage({ type: "seek", t: time }, "*");
   $("timecode").textContent = stamp(time);
   $("scrubber").value = time;
   $("frame-counter").textContent =
@@ -195,7 +192,7 @@ function select(scene, element = null, seek = true) {
     );
   } else setTime(time);
   $("composition").contentWindow.postMessage(
-    { type: "motion:selection", id: elementId },
+    { type: "select", id: elementId },
     "*",
   );
 }
@@ -572,12 +569,14 @@ window.addEventListener("message", (event) => {
     ready = true;
     setTime(time);
     $("composition").contentWindow.postMessage(
-      { type: "motion:selection", id: elementId },
+      { type: "select", id: elementId },
       "*",
     );
   }
   if (event.data?.type === "motion:error") notify(event.data.message, true);
-  if (event.data?.type === "motion:select") {
+  const inbound =
+    event.data?.type === "select" || event.data?.type === "motion:select";
+  if (inbound) {
     for (const s of comp.scenes)
       if (s.elements.some((e) => e.id === event.data.id))
         select(s.id, event.data.id, false);

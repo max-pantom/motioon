@@ -96,11 +96,14 @@ read it directly. No account or API key is needed for Motioon itself; the connec
 agent provides the language model. This build does not contain a pretend AI chat
 box or require a specific model provider.
 
-MCP tools: `motion_init`, `motion_write`, `motion_read_spec`, `motion_validate`,
-`motion_describe`, `motion_list_assets`, `motion_compile`, `motion_patch`,
-`motion_add_scene`, `motion_add_element`, `motion_add_animation`,
-`motion_add_asset`, `motion_frame`, `motion_inspect_frames`,
-`motion_detect_overflow`, `motion_render`, `motion_preview`.
+MCP editor tools (the only authoring surface): `motion_editor_state`,
+`motion_editor_schema`, `motion_editor_run`, `motion_editor_batch`. Every edit is
+a named op — `set`, `keyframe`, `deleteKeyframe`, `move`, `trim`, `reorder`,
+`enable`, `lock`, `parent`, `addLayer`, `duplicate`, `remove`, `addScene`,
+`setScene`, `removeScene` — applied in one step, written straight to `motion.md`,
+and undoable with `{op:"undo"}`. Pipeline tools outside the editor:
+`motion_init`, `motion_read_spec`, `motion_validate`, `motion_compile`,
+`motion_inspect_frames`, `motion_render`.
 
 Frame inspection returns actual PNG image content, plus semantic element bounds
 and visible overflow. MCP uses the official TypeScript SDK's stdio transport and

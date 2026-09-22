@@ -21,14 +21,25 @@ A useful loop:
 2. Set dimensions, frame rate and duration from the user's brief. Add local
    assets, then write the scenes. Preserve existing creative direction when editing.
 3. Validate with `motioon validate <file>` or `motion_validate`.
-4. Inspect representative opening, transition, middle and closing frame indices
+4. For **any authoring change** — text, time, position — use the command bus:
+   `motion_editor_state {file}` to read the tape (scenes with absolute
+   start/duration, layers with absolute start/duration and x/y/opacity/rotation/
+   scale, enabled, locked), `motion_editor_run {file, op, ...}` for one named op,
+   or `motion_editor_batch {file, commands:[...]}` for a sequence. Every document
+   op is a single named `apply` step that writes `motion.md`; every op is
+   undoable with `{op:"undo"}` (snapshot + write). Read `motion_editor_schema {}`
+   before guessing an op signature. Ops: set (text/x/y/opacity/rotation/scale/
+   fill/role/src/…), keyframe, deleteKeyframe, move, trim, reorder, enable, lock,
+   parent, addLayer, duplicate, remove, addScene, setScene, removeScene.
+5. Inspect representative opening, transition, middle and closing frame indices
    with `motioon inspect <file> --frames 0,30,60` or `motion_inspect_frames`.
    Open the returned images: JSON bounds alone cannot establish visual quality.
-5. Fix clipped text, poor hierarchy, misplaced images and awkward transitions.
-6. Render with `motioon render <file> -o <output.mp4>`. The final CLI JSON includes
+6. Fix clipped text, poor hierarchy, misplaced images and awkward transitions
+   through the bus (never by hand-editing prose-heavy markdown).
+7. Render with `motioon render <file> -o <output.mp4>`. The final CLI JSON includes
    exact dimensions, frames, cache hits and elapsed time. Verify the output exists.
-7. Return the file path and, if human adjustments are useful, the Studio URL from
-   `motioon studio <file>` or `motion_preview`.
+8. Return the file path and, if human adjustments are useful, the Studio URL from
+   `motioon studio <file>`.
 
 Frame arguments are zero-based indices. A render range is end-exclusive; inspect
 accepts a list. Place assets inside the project, reference them by relative path
@@ -39,12 +50,14 @@ and audio elements are outside V1 scope.
 Use CSS animations, `motion.onFrame`/`motion.animate`, or the file-format
 `animate:` keyframe tracks for motion. Compute state from absolute time, not
 wall-clock timers or incremental state. Keep readable text within the canvas and
-allow entrance motion to settle before a cut. The Studio updates structured
-properties directly in the markdown; `motion_patch`, `motion_add_scene`,
-`motion_add_element`, `motion_add_animation` and `motion_add_asset` do the same,
-without unused sidecars. Use `motion_write` to replace an entire `motion.md`
-source atomically (e.g. a clean slate) after `motion_init`. Raw HTML is edited
-as source.
+allow entrance motion to settle before a cut. The editor MCP surface is exactly
+four tools — state, schema, run, batch — and every control is a named op that
+applies in one step and writes `motion.md` directly; there is no side-channel
+"write/describe" API and never a second AI agent editing around the bus. Ops
+that map cleanly to the file (set, keyframe, move, trim, addLayer, duplicate,
+remove, reorder, addScene, setScene, removeScene, parent) persist in place and
+preserve all prose and raw HTML scenes; `enabled` persists as `hidden`,
+`locked` is session state. Raw HTML is edited as source.
 
 For kinetic typography, use `split: words|chars|lines` with a small `stagger`
 (usually 0.035–0.09 seconds), or `enter: type` for a typewriter reveal. Combine
@@ -98,10 +111,11 @@ These rules make minor work look deliberate:
   `expo.out` everywhere. Reserve `spring(f, d)` for a single playful accent (a
   logo pop, a settle) and `ease-in` for exits only.
 - Render checkpoints frequently: after each scene completes,
-  `motioon validate` then `motioon frame` or inspect the first, middle and last
-  frame of every scene before touching the next scene.
+  `motioon validate` then `motioon inspect <file> --frames a,b,c` on the first,
+  middle and last frame of every scene before touching the next scene.
 - Keep text within safe bounds (respect `safe_area`, centered short lines for
-  hero text) and never allow accidental overlaps (`motion_detect_overflow`).
+  hero text) and never allow accidental overlaps (`motion_inspect_frames`
+  reports per-element overflow).
 - Counters and draw effects are accents, not defaults. One counter or one draw
   per film is tasteful; several is gimmick.
 - Match motion to meaning: numbers count up (expo.out), wordmarks type or draw

@@ -19,6 +19,8 @@ const elementKeys = new Set([
   "scale",
   "rotation",
   "blur",
+  "anchorX",
+  "anchorY",
   "at",
   "duration",
   "enter",
@@ -44,6 +46,9 @@ const elementKeys = new Set([
   "html",
   "svg",
   "children",
+  "type",
+  "role",
+  "parent",
 ]);
 const projectKeys = [
   "title",

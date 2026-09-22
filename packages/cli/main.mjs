@@ -84,7 +84,7 @@ export async function main(argv = process.argv.slice(2)) {
             },
           },
           workflow:
-            "new → write motion.md → validate → inspect representative frames → fix → render → studio",
+            "new → read motion_editor_state → edit via motion_editor_run/batch ops → validate → motion_inspect_frames → fix via ops → render → studio",
         },
         null,
         2,

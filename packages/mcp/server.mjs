@@ -8,13 +8,16 @@ import { pathToFileURL } from "node:url";
 import {
   loadComposition,
   validateComposition,
-  describeComposition,
   compileFile,
   checkAssets,
 } from "../core/index.mjs";
-import { patchFile, insertFile, saveSource } from "../core/patch.mjs";
 import { renderVideo, inspectFrames } from "../renderer/render.mjs";
-import { startProjectServer } from "../server/project.mjs";
+import {
+  sessionFor,
+  runCommand,
+  describe,
+  opSchema,
+} from "../editor/editor.mjs";
 const text = (value) => ({
   content: [
     {
@@ -23,10 +26,35 @@ const text = (value) => ({
     },
   ],
 });
-const reduceInfo = ({ buffer, ...info }) => ({ ...info, buffer: undefined });
+const commandFields = {
+  op: z.string(),
+  layer: z.string().optional(),
+  prop: z.string().optional(),
+  value: z.unknown().optional(),
+  t: z.number().optional(),
+  start: z.number().optional(),
+  duration: z.union([z.number(), z.string()]).optional(),
+  scene: z.string().optional(),
+  id: z.string().optional(),
+  index: z.number().optional(),
+  parent: z.union([z.string(), z.null()]).optional(),
+  type: z.string().optional(),
+  text: z.string().optional(),
+  x: z.union([z.number(), z.string()]).optional(),
+  y: z.union([z.number(), z.string()]).optional(),
+  opacity: z.number().optional(),
+  at: z.union([z.number(), z.string()]).optional(),
+  transition: z.union([z.string(), z.record(z.unknown())]).optional(),
+  elements: z.array(z.record(z.unknown())).optional(),
+  easing: z.string().optional(),
+};
+const command = z.object(commandFields).passthrough();
+const runArgs = {
+  file: z.string().describe("Absolute path to motion.md"),
+  ...command.shape,
+};
 export function createMcpServer() {
-  const server = new McpServer({ name: "motioon", version: "0.2.0" }),
-    previews = new Map();
+  const server = new McpServer({ name: "motioon", version: "0.3.0" });
   const register = (name, description, inputSchema, callback) =>
     server.registerTool(name, { description, inputSchema }, async (args) => {
       try {
@@ -35,7 +63,60 @@ export function createMcpServer() {
         return { ...text(error.message), isError: true };
       }
     });
-  const file = { file: z.string().describe("Absolute path to motion.md") };
+
+  register(
+    "motion_editor_state",
+    "Return the full editor state for a project: comp size/fps/duration, playhead, selection, workarea, scenes (absolute start/duration) and every layer (scene, parent, type, role, absolute start/duration, x/y/opacity/rotation/scale, enabled, locked). State only — never mutates.",
+    { file: z.string().describe("Absolute path to motion.md") },
+    (a) => text(describe(sessionFor(a.file))),
+  );
+  register(
+    "motion_editor_schema",
+    "Document the command bus: every session op (seek/select/play/pause/workarea/undo/redo/describe), every document op (set/keyframe/deleteKeyframe/move/trim/reorder/enable/lock/parent/addLayer/duplicate/remove/addScene/setScene/removeScene) with required args, the editable props and their motion.md mapping, and worked examples.",
+    {},
+    () => text(opSchema),
+  );
+  register(
+    "motion_editor_run",
+    "Run one editor command against a project and return its result plus the resulting editor state. Document ops apply in a single named step and write motion.md when dirty. Never guess an op signature — read motion_editor_schema first. Undo restores the exact prior file snapshot.",
+    z.object(runArgs).passthrough(),
+    (a) => text(runCommand(sessionFor(a.file), a)),
+  );
+  register(
+    "motion_editor_batch",
+    "Run several editor commands in one session in order. Each dirty command writes motion.md; the session state (history, playhead, lock) is shared, so a later undo in the same batch steps back through all of them. Returns per-command results and the final state.",
+    {
+      file: z.string().describe("Absolute path to motion.md"),
+      commands: z
+        .array(command)
+        .min(1)
+        .describe(
+          "Commands in order; each is {op, layer?, prop?, value?, t?, start?, duration?, scene?, …}",
+        ),
+    },
+    async (a) => {
+      const session = sessionFor(a.file);
+      const results = [];
+      for (let i = 0; i < a.commands.length; i++) {
+        try {
+          const r = runCommand(session, a.commands[i]);
+          results.push({
+            index: i,
+            op: r.op,
+            ok: r.ok,
+            dirty: r.dirty,
+            result: r.result,
+          });
+        } catch (error) {
+          throw new Error(
+            `Batch aborted at command ${i} (${a.commands[i].op}): ${error.message}`,
+          );
+        }
+      }
+      return text({ results, state: describe(session) });
+    },
+  );
+
   register(
     "motion_init",
     "Create an editable video project with a working example.",
@@ -54,7 +135,7 @@ export function createMcpServer() {
   register(
     "motion_validate",
     "Validate the project, timing, asset references and files.",
-    file,
+    { file: z.string().describe("Absolute path to motion.md") },
     (a) => {
       const comp = loadComposition(a.file),
         result = validateComposition(comp);
@@ -68,21 +149,12 @@ export function createMcpServer() {
     },
   );
   register(
-    "motion_describe",
-    "Read the normalized timeline, elements and assets.",
-    file,
-    (a) => text(describeComposition(loadComposition(a.file))),
-  );
-  register(
-    "motion_list_assets",
-    "List declared local assets with types and paths.",
-    file,
-    (a) => text(loadComposition(a.file).assetInfo),
-  );
-  register(
     "motion_compile",
     "Compile a valid composition into seekable HTML.",
-    { ...file, out: z.string().optional() },
+    {
+      file: z.string().describe("Absolute path to motion.md"),
+      out: z.string().optional(),
+    },
     (a) => {
       const result = compileFile(
         a.file,
@@ -92,22 +164,10 @@ export function createMcpServer() {
     },
   );
   register(
-    "motion_patch",
-    "Persist structured scene or element fields directly to motion.md. HTML scenes use source editing.",
-    {
-      ...file,
-      scene: z.string().optional(),
-      element: z.string().optional(),
-      set: z.record(z.unknown()),
-      revision: z.string().optional(),
-    },
-    (a) => text(patchFile(a.file, a)),
-  );
-  register(
     "motion_inspect_frames",
     "Capture up to 24 exact frames as PNG images, with element bounds and overflow diagnostics.",
     {
-      ...file,
+      file: z.string().describe("Absolute path to motion.md"),
       frames: z.array(z.number().int().nonnegative()).min(1).max(24),
       outDir: z.string().optional(),
     },
@@ -126,22 +186,10 @@ export function createMcpServer() {
     },
   );
   register(
-    "motion_detect_overflow",
-    "Inspect visible elements outside the canvas at chosen frames.",
-    { ...file, frames: z.array(z.number().int().nonnegative()).min(1).max(24) },
-    async (a) =>
-      text(
-        (await inspectFrames(a.file, a)).map((r) => ({
-          frame: r.frame,
-          overflow: r.overflow,
-        })),
-      ),
-  );
-  register(
     "motion_render",
     "Render an MP4 or WebM video using deterministic frame capture. Range end is exclusive.",
     {
-      ...file,
+      file: z.string().describe("Absolute path to motion.md"),
       out: z.string().optional(),
       format: z.enum(["mp4", "webm"]).optional(),
       quality: z.enum(["draft", "high"]).optional(),
@@ -151,120 +199,6 @@ export function createMcpServer() {
     },
     async (a) => text(await renderVideo(a.file, a)),
   );
-  register(
-    "motion_write",
-    "Replace the entire motion.md source atomically (validates first). Use to create a clean slate or apply a wholesale rewrite.",
-    { ...file, source: z.string() },
-    (a) => text({ revision: saveSource(a.file, a.source) }),
-  );
-  register(
-    "motion_add_asset",
-    "Declare a project asset (id + src, optionally type) in motion.md frontmatter.",
-    {
-      ...file,
-      id: z.string().describe("Unique asset id, letters/digits/-/_"),
-      src: z.string(),
-      type: z.string().optional(),
-    },
-    async (a) =>
-      text(
-        insertFile(a.file, { asset: { id: a.id, src: a.src, type: a.type } }),
-      ),
-  );
-  register(
-    "motion_add_scene",
-    "Append a scene to the composition. Extends duration if it runs past the project end.",
-    {
-      ...file,
-      scene: z
-        .object({
-          id: z.string(),
-          at: z.union([z.number(), z.string()]).optional(),
-          duration: z.union([z.number(), z.string()]).optional(),
-          transition: z.union([z.string(), z.record(z.unknown())]).optional(),
-          elements: z.array(z.record(z.unknown())).optional(),
-        })
-        .passthrough(),
-    },
-    async (a) => text(insertFile(a.file, { scene: a.scene })),
-  );
-  register(
-    "motion_add_element",
-    "Add an element to a structured scene (id, type, position, animation).",
-    {
-      ...file,
-      scene: z.string(),
-      element: z.record(z.unknown()),
-    },
-    async (a) =>
-      text(insertFile(a.file, { scene: a.scene, element: a.element })),
-  );
-  register(
-    "motion_add_animation",
-    "Animate a property of an element with {from, to, start?, duration?, easing?} tracks.",
-    {
-      ...file,
-      scene: z.string(),
-      element: z.string(),
-      animation: z.record(
-        z.union([
-          z.object({
-            from: z.number(),
-            to: z.number(),
-            start: z.union([z.number(), z.string()]).optional(),
-            duration: z.union([z.number(), z.string()]).optional(),
-            easing: z.string().optional(),
-          }),
-          z.tuple([z.number(), z.number()]),
-        ]),
-      ),
-    },
-    async (a) =>
-      text(
-        insertFile(a.file, {
-          scene: a.scene,
-          element: a.element,
-          animation: a.animation,
-        }),
-      ),
-  );
-  register(
-    "motion_frame",
-    "Render one exact PNG frame. Returns the image plus element bounds and overflow.",
-    {
-      ...file,
-      frame: z.number().int().nonnegative(),
-    },
-    async (a) => {
-      const [result] = await inspectFrames(a.file, { frames: [a.frame] });
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(reduceInfo(result)) },
-          {
-            type: "image",
-            data: result.buffer.toString("base64"),
-            mimeType: "image/png",
-          },
-        ],
-      };
-    },
-  );
-  register(
-    "motion_preview",
-    "Open a local editable Studio server and return its URL.",
-    file,
-    async (a) => {
-      const key = resolve(a.file);
-      if (!previews.has(key))
-        previews.set(key, await startProjectServer(key, { studio: true }));
-      return text({ url: previews.get(key).url });
-    },
-  );
-  const close = server.close.bind(server);
-  server.close = async () => {
-    await Promise.all([...previews.values()].map((p) => p.close()));
-    await close();
-  };
   return server;
 }
 export async function startMcp() {

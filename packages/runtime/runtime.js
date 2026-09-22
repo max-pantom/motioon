@@ -437,15 +437,16 @@
           });
           window.addEventListener("message", (event) => {
             if (event.source !== parent) return;
-            if (event.data?.type === "motion:seek") {
+            const data = event.data;
+            if (data?.type === "seek" || data?.type === "motion:seek") {
               try {
-                seek(event.data.time);
+                seek(data.t ?? data.time ?? 0);
               } catch {}
             }
-            if (event.data?.type === "motion:selection") {
+            if (data?.type === "select" || data?.type === "motion:selection") {
               for (const el of stage.querySelectorAll(".el")) {
                 el.style.outline =
-                  el.dataset.id === event.data.id ? "2px solid #0a84ff" : "";
+                  el.dataset.id === data.id ? "2px solid #0a84ff" : "";
                 el.style.outlineOffset = "6px";
               }
             }
@@ -455,7 +456,7 @@
             if (el)
               parent.postMessage(
                 {
-                  type: "motion:select",
+                  type: "select",
                   id: el.dataset.motionId || el.dataset.motion,
                 },
                 "*",
