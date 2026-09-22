@@ -458,6 +458,18 @@ $("redo").onclick = async () => {
     saveBusy = false;
   }
 };
+const Motion = globalThis.Motion;
+const setProgress = (value) => {
+  const bar = $("export-progress");
+  if (Motion?.animate) {
+    const anim = Motion.animate(
+      bar,
+      { value },
+      { duration: 0.35, ease: "easeOut" },
+    );
+    if (value >= 1 || value <= 0) anim.complete();
+  } else bar.value = value;
+};
 $("export-open").onclick = () => {
   if (dirty) {
     notify("Save or discard your adjustments before exporting.", true);
@@ -485,7 +497,7 @@ $("render").onclick = async () => {
     const poll = async () => {
       try {
         const value = await request("/api/render/" + job.id);
-        $("export-progress").value = value.progress;
+        setProgress(value.progress);
         $("export-status").textContent =
           `Rendering · ${Math.round(value.progress * 100)}%`;
         if (value.status === "failed") throw new Error(value.error);
@@ -494,6 +506,14 @@ $("render").onclick = async () => {
             `Ready. ${value.result.frames} frames rendered in ${value.result.seconds}s.`;
           $("download").href = "/download/" + job.id;
           $("download").hidden = false;
+          if (Motion?.animate) {
+            const dl = $("download");
+            Motion.animate(
+              dl,
+              { opacity: [0, 1], scale: [0.92, 1.06, 1] },
+              { duration: 0.55, ease: Motion.anticipate },
+            );
+          }
           button.disabled = false;
         } else exportTimer = setTimeout(poll, 700);
       } catch (e) {

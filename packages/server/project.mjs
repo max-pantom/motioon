@@ -165,6 +165,18 @@ export async function startProjectServer(
           ),
           mime[extname(pathname)],
         );
+      // The motion.dev `motion` package (UMD build) drives Studio UI animation.
+      if (studio && pathname === "/vendor/motion.js")
+        return send(
+          200,
+          readFileSync(
+            new URL(
+              "../../node_modules/motion/dist/motion.js",
+              import.meta.url,
+            ),
+          ),
+          "text/javascript",
+        );
       if (pathname === "/" || pathname === "/composition.html") {
         const { composition } = read();
         return send(

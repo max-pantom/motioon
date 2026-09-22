@@ -1,0 +1,16 @@
+{
+  "name": "@motioon/motion",
+  "version": "0.1.0",
+  "description": "Programmatic authoring helpers for Motioon motion.md films: film/scene/element builders, entrance presets, tween/count/swap motion helpers.",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "files": [
+    "index.mjs"
+  ],
+  "dependencies": {
+    "yaml": "^2.7.0"
+  }
+}

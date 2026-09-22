@@ -39,6 +39,13 @@ Global installation is optional; it is not performed by setup.
 
 ## Write videos
 
+Author films by hand, with an agent, or programmatically. Two assistant
+packages exist: `@motioon/motion` (packages/motion) emits `motion.md` from
+`film()`/`scene()` builders, `enter.*` entrance presets, `tween`/`countUp`/
+`swap` and a Markdown serializer (see `examples/motioon-launch/build.mjs`); the
+motion.dev `motion` package powers the Studio UI (progress tween, completion
+pop). See `skills/motion/SKILL.md` for the authoring loop agents already know.
+
 The [format and runtime reference](SPEC.md) documents both supported scene formats:
 
 - **Structured scenes**: YAML layers inside a `motion` fence. Studio can edit

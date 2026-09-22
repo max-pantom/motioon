@@ -53,6 +53,37 @@ either with `slide-left`, `rotate-in`, `pop`, or `blur-in`. Use `wipe-up`,
 strokes can be traced with `enter: draw`, counters with `count: {to, prefix}`,
 and multi-stop arrays in `motion.animate` support overshoot and settle.
 
+All `start` (animate, count, replace) and `delay` (entries) values are
+scene-local seconds, relative to the scene's own start, not the film clock. When
+cutting across scenes, offset every beat by the accumulated scene starts.
+
+You can author programmatically: `@motioon/motion` (packages/motion) builds
+`motion.md` from `film()` + element/scene builders, `enter.*` entrance presets,
+and `tween()`/`countUp()`/`swap()` helpers; `f.md()` emits the source. See
+`examples/motioon-launch/build.mjs`. Accepted launch films to study and match
+pacing from: `examples/sunset-launch`, `examples/ember-launch`,
+`examples/motioon-launch`.
+
+## Launch-film recipe
+
+A launch video reads as a banger when the silence is as deliberate as the
+motion. Use this four-beat rhythm, then cover the basics before embellishing:
+
+1. Open — one confident element (wordmark or mark) at 0.0s, settling fast
+   (≈ 0.5–0.9s) so the film starts clean, not tentative.
+2. Statement — the single big idea in huge type. Type it in (`enter: type`,
+   1.2–1.8s) or fade it up; one quiet accent (a drawn rule, a glow) is enough.
+   Hold so it lands.
+3. Showcase — the proof: a card, stats (`count:`) or a product surface. One
+   entry wave (staggered ≤ 0.9s each), one spring accent max. Numbers count up
+   with `expo.out`.
+4. End — the call-to-action line and a long hold. The last frame must feel
+   finished before the loop/cut; never exit on a spring still wobbling.
+
+Constraints that keep it banger-adjacent: one focal movement per scene, one
+easing family (usually `expo.out`), reads ≤ 12s, runs only forward, and never
+cuts into a moving entrance — settle first, then cut.
+
 ## Taste
 
 These rules make minor work look deliberate:

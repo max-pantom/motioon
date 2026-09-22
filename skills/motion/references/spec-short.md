@@ -15,9 +15,11 @@ background: "#15121f"
 ---
 
 # Direction
+
 One confident headline. Give it room to breathe.
 
 ## scene: intro
+
 ```motion
 duration: 3
 elements:
@@ -39,7 +41,12 @@ For an HTML shot, replace the scene with a timed heading and HTML:
 ## Scene: intro (0s-3s)
 <h1 id="headline" data-motion="headline">Something worth moving for.</h1>
 <script>
-  motion.animate('#headline', { opacity: [0,1], y: [24,0], start: 0, duration: .6 });
+  motion.animate("#headline", {
+    opacity: [0, 1],
+    y: [24, 0],
+    start: 0,
+    duration: 0.6,
+  });
 </script>
 ```
 
