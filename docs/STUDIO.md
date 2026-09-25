@@ -6,12 +6,13 @@ Studio is the local editor for a `motion.md` project. Start it with:
 node bin/motion.mjs studio path/to/motion.md --port 4400
 ```
 
-The interface opens in dark mode with shadcn preset
-[`b51pyaag6`](https://ui.shadcn.com/create?preset=b51pyaag6): Rhea styling,
-neutral surfaces, a lime primary color, medium radius, and Geist. The preset's
-generated semantic color variables are in `packages/studio/preset.css`. Studio
-components and the font are bundled locally; opening a project does not need a
-design-system CDN. The preview keeps each video's own colors and dimensions.
+The interface opens in dark mode with Sunset's visual language: a `#1d1d1f`
+canvas, `#2c2c2c` surfaces, Inter, white primary actions, and blue focus. The
+shadcn [`b51pyaag6`](https://ui.shadcn.com/create?preset=b51pyaag6) preset
+remains the component base layer in `packages/studio/preset.css`;
+`packages/studio/sunset-theme.css` applies Sunset's tokens to the editor.
+Components and fonts are bundled locally. The preview keeps each video's own
+colors and dimensions. See the [Studio design rules](studio-design.md).
 
 ## Edit a project
 

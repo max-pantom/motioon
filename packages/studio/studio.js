@@ -15,10 +15,10 @@ const esc = (s = "") =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 const palette = [
-  ["#2d3922", "#b4df78"],
-  ["#342d24", "#dfbd79"],
-  ["#2d2b38", "#b8a4e4"],
-  ["#3a2931", "#e29bb8"],
+  ["#38383a", "#ffffff"],
+  ["#343436", "#ffffff"],
+  ["#303032", "#ffffff"],
+  ["#3c3c3e", "#ffffff"],
 ];
 let project,
   comp,

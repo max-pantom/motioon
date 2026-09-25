@@ -232,6 +232,7 @@ export async function startProjectServer(
           "/studio.js",
           "/studio.css",
           "/preset.css",
+          "/sunset-theme.css",
           "/source-tools.js",
         ].includes(pathname)
       )
@@ -247,6 +248,14 @@ export async function startProjectServer(
           200,
           readFileSync(
             new URL("../studio/assets/geist.woff2", import.meta.url),
+          ),
+          "font/woff2",
+        );
+      if (studio && pathname === "/studio-inter.woff2")
+        return send(
+          200,
+          readFileSync(
+            new URL("../studio/assets/inter.woff2", import.meta.url),
           ),
           "font/woff2",
         );

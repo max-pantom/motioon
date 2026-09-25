@@ -919,7 +919,7 @@
             if (data?.type === "select" || data?.type === "motion:selection") {
               for (const el of stage.querySelectorAll(".el")) {
                 el.style.outline =
-                  el.dataset.id === data.id ? "2px solid #a3e635" : "";
+                  el.dataset.id === data.id ? "2px solid #0071e3" : "";
                 el.style.outlineOffset = "6px";
               }
             }

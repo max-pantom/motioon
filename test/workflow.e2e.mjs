@@ -414,7 +414,7 @@ test(
         await new Promise((r) => setTimeout(r, 50));
         return document
           .querySelector("[data-id=title]")
-          .style.outline.includes("rgb(163, 230, 53)");
+          .style.outline.includes("rgb(0, 113, 227)");
       });
       assert.equal(highlighted, true);
       await page.evaluate(() =>

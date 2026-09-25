@@ -18,10 +18,10 @@ npm run setup
 npm run dev
 ```
 
-Open **http://127.0.0.1:4400**. Studio opens in dark mode using the colors and type from
-[`b51pyaag6` shadcn preset](https://ui.shadcn.com/create?preset=b51pyaag6)
-(Rhea, neutral surfaces, lime accent, Geist type). Its React shell uses locally
-bundled shadcn-style source components. The
+Open **http://127.0.0.1:4400**. Studio opens in dark mode with the Sunset
+interface language: compact neutral chrome, Inter type, white actions, and blue
+focus. It keeps locally bundled shadcn-style source components and the
+`b51pyaag6` preset as a base layer. The
 sample project has three scenes, selectable
 layers, property editing, playback, frame scrubbing, source editing, undo/redo,
 assets, and local video export. The source editor highlights keys and colors;
