@@ -7,18 +7,18 @@ seller verification, and acquisition history do not become Studio features.
 
 ## Tokens
 
-| Role | Value | Studio use |
-| --- | --- | --- |
-| Canvas | `#1d1d1f` | Page and header |
-| Surface | `#2c2c2c` | Workspace panels |
-| Hover | `#303030` | Selected and interactive surfaces |
-| Control | `#2f2f2f` | Inputs and compact controls |
-| Media | `#171717` | Composition shelf |
-| Ink | `#ffffff` | Primary text |
-| Muted | `rgb(255 255 255 / 0.70)` | Metadata and controls |
-| Soft | `rgb(255 255 255 / 0.52)` | Captions |
-| Action | `#fefefe` with `#101010` text | Primary actions and play |
-| Focus | `#0071e3` | Keyboard ring, selected edge, playhead |
+| Role    | Value                         | Studio use                             |
+| ------- | ----------------------------- | -------------------------------------- |
+| Canvas  | `#1d1d1f`                     | Page and header                        |
+| Surface | `#2c2c2c`                     | Workspace panels                       |
+| Hover   | `#303030`                     | Selected and interactive surfaces      |
+| Control | `#2f2f2f`                     | Inputs and compact controls            |
+| Media   | `#171717`                     | Composition shelf                      |
+| Ink     | `#ffffff`                     | Primary text                           |
+| Muted   | `rgb(255 255 255 / 0.70)`     | Metadata and controls                  |
+| Soft    | `rgb(255 255 255 / 0.52)`     | Captions                               |
+| Action  | `#fefefe` with `#101010` text | Primary actions and play               |
+| Focus   | `#0071e3`                     | Keyboard ring, selected edge, playhead |
 
 Use Inter from a local font file so Studio works offline. Title and section
 heads use medium weight and `-0.02em` tracking. Timecodes and frame counts use
