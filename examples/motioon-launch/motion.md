@@ -56,16 +56,22 @@ elements:
     font_size: 34
     font_weight: 700
     letter_spacing: 0.5em
-    color: "#8B7CFF"
+    color: "#8b7cff"
     x: 50%
-    y: 30%
+    y: 50%
     split: chars
-    stagger: 0.05
+    stagger: 0.145
     enter:
       preset: slide-left
       duration: 0.55
       delay: 0.1
       easing: expo.out
+    scale: 1
+    rotation: 0
+    opacity: 1
+    at: 0
+    duration: 2.4
+    hidden: false
 ```
 
 ## scene: statement
@@ -121,17 +127,17 @@ elements:
   - id: cardBg
     type: shape
     shape: rect
-    fill: "#10131C"
+    fill: "#10131c"
     w: 960
     h: 460
     radius: 28
     x: 50%
-    y: 50%
+    y: 53%
     enter:
-      preset: slide-left
+      preset: slide-right
       duration: 0.65
       delay: 0.1
-      easing: expo.out
+      easing: linear
     animate:
       scale:
         from: 0.94
@@ -139,6 +145,12 @@ elements:
         start: 0.28
         duration: 0.8
         easing: spring(3, 14)
+    scale: 1
+    rotation: 0
+    opacity: 1
+    at: 0
+    duration: 3
+    hidden: false
   - id: n300
     type: text
     text: ""

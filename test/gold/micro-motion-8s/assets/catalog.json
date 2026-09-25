@@ -1,0 +1,5 @@
+{
+  "tick.cut": {"src": "assets/audio/tick.cut.wav", "kind": "sting", "dur": 0.12},
+  "tick.point": {"src": "assets/audio/tick.point.wav", "kind": "sting", "dur": 0.2},
+  "ui.feature": {"src": "assets/ui/feature.png", "kind": "image", "w": 1440, "h": 900}
+}

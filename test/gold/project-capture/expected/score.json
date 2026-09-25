@@ -1,0 +1,59 @@
+{
+  "recipe": "openai-launch",
+  "score": 10,
+  "maximum": 10,
+  "ok": true,
+  "checks": [
+    {
+      "id": "real-product",
+      "pass": true,
+      "message": "Include a cataloged UI image or video shot."
+    },
+    {
+      "id": "hard-cuts",
+      "pass": true,
+      "message": "Use hard cuts between shots."
+    },
+    {
+      "id": "hold",
+      "pass": true,
+      "message": "Hold at least one shot for 1.6s."
+    },
+    {
+      "id": "no-fade-up",
+      "pass": true,
+      "message": "Avoid fade-up entrances."
+    },
+    {
+      "id": "sparse-card-copy",
+      "pass": true,
+      "message": "Keep cards to two text layers or fewer."
+    },
+    {
+      "id": "card-colors",
+      "pass": true,
+      "message": "Limit each card to ground, ink and one muted color."
+    },
+    {
+      "id": "one-entrance",
+      "pass": true,
+      "message": "Use at most one entrance per shot."
+    },
+    {
+      "id": "brief-move",
+      "pass": true,
+      "message": "Keep entrance motion within 400ms."
+    },
+    {
+      "id": "cut-cues",
+      "pass": true,
+      "message": "Place a sting within one frame of every cut."
+    },
+    {
+      "id": "quiet-bed",
+      "pass": true,
+      "message": "Keep music at -22dB or quieter."
+    }
+  ],
+  "warnings": []
+}

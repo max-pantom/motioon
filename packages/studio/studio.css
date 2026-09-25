@@ -324,7 +324,7 @@ a {
   align-items: center;
   gap: 9px;
   min-height: 34px;
-  padding: 5px 11px;
+  padding: 5px 11px 5px calc(11px + var(--depth, 0) * 14px);
   font-size: 12px;
   text-align: left;
   color: var(--ink-muted);
@@ -429,6 +429,11 @@ a {
 .quiet span {
   margin-left: 4px;
   font-variant-numeric: tabular-nums;
+}
+#canvas-mode[aria-pressed="true"] {
+  color: var(--focus-deep);
+  background: var(--focus-soft);
+  box-shadow: inset 0 0 0 1px rgb(232 89 12 / 0.22);
 }
 .canvas-area {
   position: relative;
@@ -901,30 +906,147 @@ dialog > p {
   margin-top: 20px;
 }
 #source-dialog {
-  width: min(840px, calc(100vw - 32px));
+  width: min(1120px, calc(100vw - 32px));
 }
-#source-text {
-  width: 100%;
-  height: 52vh;
+.source-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 14px;
+}
+.source-code {
+  position: relative;
+  min-width: 0;
+  height: 56vh;
   background: #f7f7f8;
   box-shadow: var(--inset);
-  border: 0;
   border-radius: 14px;
+  overflow: hidden;
+}
+#source-text,
+#source-highlight {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
   padding: 16px;
   font:
     12px/1.6 ui-monospace,
     "SF Mono",
     Menlo,
     monospace;
-  resize: vertical;
   tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+#source-highlight {
+  pointer-events: none;
   color: var(--ink);
+  scrollbar-width: none;
+}
+#source-highlight::-webkit-scrollbar {
+  display: none;
+}
+#source-text {
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--ink);
+  resize: none;
   outline: none;
 }
 #source-text:focus {
-  box-shadow:
-    var(--inset),
-    0 0 0 2px var(--focus);
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+#source-text::selection {
+  background: rgb(10 132 255 / 0.22);
+}
+.syntax-heading {
+  color: #615294;
+  font-weight: 600;
+}
+.syntax-fence {
+  color: #6e7581;
+}
+.syntax-key {
+  color: #215e91;
+}
+.syntax-punctuation {
+  color: #7c8490;
+}
+.syntax-color {
+  color: #a44660;
+  font-weight: 600;
+}
+.source-inspector {
+  min-width: 0;
+  max-height: 56vh;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-hover);
+  box-shadow: var(--inset);
+}
+.source-inspector h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.source-inspector h3:not(:first-child) {
+  margin-top: 22px;
+}
+.source-inspector .field {
+  margin-top: 12px;
+}
+#source-apply {
+  margin-top: 12px;
+}
+.source-detail {
+  color: var(--ink-soft);
+  font:
+    11px/1.4 ui-monospace,
+    monospace;
+}
+.source-colors {
+  display: grid;
+  gap: 6px;
+}
+.source-color {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--inset);
+  text-align: left;
+  font:
+    11px ui-monospace,
+    monospace;
+}
+.source-color:hover,
+.source-color:focus-visible {
+  box-shadow: var(--inset-strong);
+}
+.source-color span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+@media (max-width: 760px) {
+  .source-workspace {
+    grid-template-columns: 1fr;
+  }
+  .source-code {
+    height: 48vh;
+  }
+  .source-inspector {
+    max-height: 22vh;
+  }
 }
 #source-error {
   color: var(--danger);
@@ -1224,4 +1346,701 @@ dialog > p {
   dialog {
     padding: 22px;
   }
+}
+/* Source components: shadcn/ui Card + Button, ElevenLabs UI Waveform. */
+#sound-panel {
+  padding: 0 18px 18px;
+}
+.ui-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 10px #10182808;
+  overflow: hidden;
+}
+.ui-card-header {
+  padding: 16px 16px 8px;
+}
+.ui-card-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+.ui-card-description {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #747782;
+}
+.ui-card-content {
+  padding: 8px 16px 16px;
+}
+.ui-card-content select {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  margin: 5px 0 8px;
+  padding: 0 8px;
+  border: 1px solid #dfe1e7;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 11px;
+  color: #222;
+}
+.sound-cue-label {
+  font-size: 10px;
+  color: #646873;
+  font-weight: 600;
+}
+.ui-waveform {
+  width: 100%;
+  margin: 8px 0;
+}
+.ui-waveform canvas {
+  display: block;
+}
+.sound-cue-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: #747782;
+}
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #dfe1e7;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ui-button:hover {
+  background: #f6f7f9;
+}
+.ui-button:focus-visible {
+  outline: 2px solid #1474d4;
+  outline-offset: 2px;
+}
+
+/* Studio shell uses the shadcn source-component language throughout. */
+:root {
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --surface-hover: #fafafa;
+  --control: #f4f4f5;
+  --media: #f4f4f5;
+  --ink: #09090b;
+  --ink-muted: #52525b;
+  --ink-soft: #71717a;
+  --focus: #2563eb;
+  --focus-deep: #1d4ed8;
+  --focus-soft: #eff6ff;
+  --action: #18181b;
+  --action-ink: #ffffff;
+  --inset: inset 0 0 0 1px #e4e4e7;
+  --inset-strong: inset 0 0 0 1px #d4d4d8;
+  --media-edge: inset 0 0 0 1px #e4e4e7;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  --radius-card: 12px;
+  --radius-inner: 8px;
+}
+body {
+  background: var(--canvas);
+}
+.app-header {
+  height: 64px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e4e4e7;
+  box-shadow: none;
+}
+.header-frame {
+  grid-template-columns: 220px minmax(0, 1fr) auto;
+  gap: 16px;
+}
+.brand {
+  gap: 9px;
+  font-size: 18px;
+  font-weight: 650;
+}
+.brand svg {
+  width: 30px;
+  height: 30px;
+}
+.project-heading {
+  justify-self: start;
+  text-align: left;
+  max-width: 100%;
+  padding-left: 15px;
+  border-left: 1px solid #e4e4e7;
+}
+.project-heading h1 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.save-state {
+  font-size: 11px;
+}
+.header-actions {
+  gap: 6px;
+}
+.header-divider {
+  width: 1px;
+  height: 22px;
+  background: #e4e4e7;
+  margin: 0 6px;
+}
+.ui-button,
+.primary,
+.secondary,
+.quiet,
+.icon-button {
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.ui-button {
+  font-size: 12px;
+  min-height: 34px;
+}
+.ui-button-default,
+.primary {
+  background: var(--action);
+  color: #fff;
+  border: 1px solid var(--action);
+}
+.ui-button-default:hover,
+.primary:hover {
+  background: #27272a;
+  color: #fff;
+}
+.ui-button-outline,
+.secondary {
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  color: var(--ink);
+}
+.ui-button-outline:hover,
+.secondary:hover {
+  background: #f4f4f5;
+}
+.ui-button-ghost,
+.quiet,
+.icon-button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink-muted);
+}
+.ui-button-ghost:hover,
+.quiet:hover,
+.icon-button:hover {
+  background: #f4f4f5;
+  color: var(--ink);
+}
+.icon-button {
+  width: 34px;
+  height: 34px;
+}
+.workspace {
+  grid-template-columns: 250px minmax(360px, 1fr) 300px;
+  grid-template-rows: minmax(470px, calc(100dvh - 329px)) 235px;
+  gap: 12px;
+  padding: 12px;
+}
+.workspace > .ui-card,
+.workspace > .editor {
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.sidebar {
+  grid-row: 1 / 3;
+  overflow: auto;
+}
+.sidebar-top {
+  padding: 20px 16px 12px;
+}
+.eyebrow {
+  color: #71717a;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.segmented {
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #f4f4f5;
+  margin-top: 12px;
+}
+.segmented button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 30px;
+}
+.segmented button[aria-pressed="true"] {
+  background: white;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.scene-card {
+  border-radius: 8px;
+}
+.scene-row {
+  border-radius: 8px;
+}
+.scene-row.selected {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.scene-row.selected strong,
+.scene-row.selected small {
+  color: #1d4ed8;
+}
+.layer.selected {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.sidebar-foot {
+  border-top: 1px solid #e4e4e7;
+  background: #fff;
+}
+.editor {
+  padding: 20px 22px 16px;
+  background: #fff;
+}
+.preview-heading h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.pill {
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  border-radius: 7px;
+  color: #52525b;
+}
+#canvas-mode[aria-pressed="true"] {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.canvas-area {
+  background-color: #fafafa;
+  background-image: radial-gradient(#e4e4e7 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+  border: 1px solid #f4f4f5;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding-bottom: 66px;
+}
+.canvas-shell {
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px #d4d4d8,
+    0 12px 30px rgb(0 0 0 / 0.12);
+}
+.transport {
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.1);
+}
+.play-button {
+  border-radius: 8px;
+  background: #18181b;
+}
+.inspector {
+  overflow: auto;
+}
+.inspector-heading {
+  border-bottom: 1px solid #e4e4e7;
+}
+.inspector-heading h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.property-section {
+  border-color: #e4e4e7;
+}
+.field input,
+.field textarea,
+.field select,
+.field-row input,
+.field-row select,
+dialog input,
+dialog select {
+  border: 1px solid #e4e4e7;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus,
+.field-row input:focus,
+.field-row select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+.timeline-panel {
+  grid-column: 2 / 4;
+  background: #fff;
+}
+.timeline-heading {
+  border-bottom: 1px solid #e4e4e7;
+}
+.timeline-heading h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.clip {
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.clip.selected {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  box-shadow: none;
+}
+.playhead {
+  background: #ef4444;
+}
+.playhead::before {
+  border-top-color: #ef4444;
+}
+dialog {
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.22);
+}
+dialog::backdrop {
+  background: rgb(9 9 11 / 0.42);
+  backdrop-filter: blur(3px);
+}
+.dialog-heading h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.source-code,
+.source-inspector,
+.export-summary,
+.ui-card {
+  border-radius: 8px;
+}
+.ui-card {
+  border: 1px solid #e4e4e7;
+  box-shadow: none;
+}
+.status {
+  border-radius: 8px;
+}
+@media (max-width: 1050px) {
+  .workspace {
+    grid-template-columns: 210px minmax(320px, 1fr) 260px;
+  }
+  .header-frame {
+    grid-template-columns: 175px minmax(0, 1fr) auto;
+  }
+}
+@media (max-width: 780px) {
+  .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar,
+  .editor,
+  .inspector,
+  .timeline-panel {
+    min-height: 0;
+  }
+  .editor {
+    min-height: 520px;
+  }
+  .header-frame {
+    grid-template-columns: auto 1fr;
+  }
+  .project-heading {
+    display: none;
+  }
+  .header-actions {
+    grid-column: 2;
+  }
+}
+
+/* b51pyaag6: base-rhea, neutral + lime, Geist, medium radius, dark default. */
+html.dark {
+  color-scheme: dark;
+  font-family: "Geist Variable", sans-serif;
+  --canvas: var(--background);
+  --surface: var(--card);
+  --surface-hover: var(--muted);
+  --control: var(--secondary);
+  --media: var(--muted);
+  --ink: var(--foreground);
+  --ink-muted: var(--muted-foreground);
+  --ink-soft: color-mix(
+    in oklch,
+    var(--muted-foreground),
+    var(--background) 16%
+  );
+  --focus: var(--primary);
+  --focus-deep: color-mix(in oklch, var(--primary), black 10%);
+  --focus-soft: color-mix(in oklch, var(--primary) 13%, var(--card));
+  --action: var(--primary);
+  --action-ink: var(--primary-foreground);
+  --inset: inset 0 0 0 1px var(--border);
+  --inset-strong: inset 0 0 0 1px var(--input);
+  --media-edge: inset 0 0 0 1px var(--border);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+  --radius-card: 14px;
+  --radius-inner: 10px;
+  background: var(--background);
+  color: var(--foreground);
+}
+html.dark body,
+html.dark .app-header,
+html.dark .editor,
+html.dark .sidebar-foot,
+html.dark .timeline-panel {
+  background: var(--background);
+  color: var(--foreground);
+}
+html.dark .app-header,
+html.dark .project-heading,
+html.dark .header-divider,
+html.dark .sidebar-foot,
+html.dark .inspector-heading,
+html.dark .timeline-heading {
+  border-color: var(--border);
+}
+html.dark .header-divider {
+  background: var(--border);
+}
+html.dark .workspace {
+  gap: 10px;
+  padding: 10px;
+}
+html.dark .workspace > .ui-card,
+html.dark .workspace > .editor {
+  background: var(--card);
+  border-color: var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+html.dark .sidebar {
+  background: var(--sidebar);
+}
+html.dark .brand,
+html.dark .scene-row,
+html.dark .layer,
+html.dark .preview-heading h2,
+html.dark .inspector-heading h2,
+html.dark .timeline-heading h2 {
+  color: var(--foreground);
+}
+html.dark .save-state,
+html.dark .eyebrow,
+html.dark .muted,
+html.dark .scene-row small,
+html.dark .asset-row small,
+html.dark .source-detail {
+  color: var(--muted-foreground);
+}
+html.dark .segmented,
+html.dark .pill,
+html.dark .quiet {
+  background: var(--secondary);
+  border-color: var(--border);
+  color: var(--secondary-foreground);
+}
+html.dark .segmented button[aria-pressed="true"] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow);
+}
+html.dark .ui-button,
+html.dark .primary,
+html.dark .secondary,
+html.dark .quiet,
+html.dark .icon-button {
+  border-radius: 16px;
+}
+html.dark .ui-button,
+html.dark .primary,
+html.dark .secondary {
+  min-height: 32px;
+}
+html.dark .ui-button-default,
+html.dark .primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .ui-button-default:hover,
+html.dark .primary:hover {
+  background: color-mix(in oklch, var(--primary) 80%, var(--card));
+  color: var(--primary-foreground);
+}
+html.dark .ui-button-outline,
+html.dark .secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+html.dark .ui-button-outline:hover,
+html.dark .secondary:hover,
+html.dark .ui-button-ghost:hover,
+html.dark .quiet:hover,
+html.dark .icon-button:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+html.dark #canvas-mode[aria-pressed="true"],
+html.dark .scene-row.selected,
+html.dark .layer.selected {
+  background: var(--focus-soft);
+  border-color: color-mix(in oklch, var(--primary), transparent 65%);
+  color: var(--primary);
+}
+html.dark .scene-row.selected strong,
+html.dark .scene-row.selected small {
+  color: var(--primary);
+}
+html.dark .scene-card,
+html.dark .layer:hover,
+html.dark .scene-row:hover,
+html.dark .asset-row {
+  background: var(--sidebar-accent);
+}
+html.dark .canvas-area {
+  background-color: var(--background);
+  background-image: radial-gradient(var(--border) 0.7px, transparent 0.7px);
+  border-color: var(--border);
+}
+html.dark .canvas-shell {
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 14px 34px rgb(0 0 0 / 0.36);
+}
+html.dark .transport {
+  background: color-mix(in srgb, var(--popover) 88%, transparent);
+  border-color: var(--border);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.36);
+  backdrop-filter: blur(14px);
+}
+html.dark .play-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .property-section,
+html.dark .ui-card,
+html.dark .source-code,
+html.dark .source-inspector,
+html.dark .export-summary {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: var(--inset);
+}
+html.dark .field input,
+html.dark .field textarea,
+html.dark .field select,
+html.dark .field-row input,
+html.dark .field-row select,
+html.dark dialog input,
+html.dark dialog select,
+html.dark .ui-card-content select {
+  background: var(--background);
+  border-color: var(--input);
+  color: var(--foreground);
+}
+html.dark .field input:focus,
+html.dark .field textarea:focus,
+html.dark .field select:focus,
+html.dark .field-row input:focus,
+html.dark .field-row select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 30%, transparent);
+}
+html.dark .timeline-panel {
+  background: var(--card);
+}
+html.dark .timeline-ruler,
+html.dark .track-lane {
+  color: var(--muted-foreground);
+}
+html.dark .clip {
+  color: var(--foreground);
+  border-color: var(--border);
+}
+html.dark .clip.selected {
+  outline-color: var(--primary);
+}
+html.dark .playhead {
+  background: var(--chart-3);
+}
+html.dark .playhead::before {
+  border-top-color: var(--chart-3);
+}
+html.dark dialog {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border-color: var(--border);
+  border-radius: 16px;
+}
+html.dark dialog::backdrop {
+  background: rgb(0 0 0 / 0.68);
+}
+html.dark .source-code,
+html.dark .source-inspector {
+  background: var(--background);
+}
+html.dark #source-highlight {
+  color: var(--foreground);
+}
+html.dark #source-text {
+  caret-color: var(--primary);
+}
+html.dark #source-text:focus {
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+html.dark .syntax-heading {
+  color: var(--primary);
+}
+html.dark .syntax-key {
+  color: var(--chart-1);
+}
+html.dark .syntax-color {
+  color: var(--chart-2);
+}
+html.dark .syntax-fence,
+html.dark .syntax-punctuation {
+  color: var(--muted-foreground);
+}
+html.dark .source-color {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+html.dark .ui-button-default {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .source-color:hover {
+  background: var(--muted);
+}
+html.dark .status:not(:empty) {
+  background: var(--popover);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+html.dark .status.error {
+  background: var(--destructive);
+  color: var(--background);
 }

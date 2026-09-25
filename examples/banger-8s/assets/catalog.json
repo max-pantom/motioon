@@ -1,0 +1,22 @@
+{
+  "tick.cut": {
+    "src": "assets/audio/tick.cut.wav",
+    "kind": "sting",
+    "dur": 0.12
+  },
+  "tick.point": {
+    "src": "assets/audio/tick.point.wav",
+    "kind": "sting",
+    "dur": 0.2
+  },
+  "tick.arrive": {
+    "src": "assets/audio/tick.arrive.wav",
+    "kind": "sting",
+    "dur": 0.3
+  },
+  "tick.air": {
+    "src": "assets/audio/tick.air.wav",
+    "kind": "room",
+    "dur": 8
+  }
+}

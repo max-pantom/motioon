@@ -17,7 +17,28 @@ import {
 } from "../core/index.mjs";
 import { startProjectServer } from "../server/project.mjs";
 import { inspectFrames, renderVideo } from "../renderer/render.mjs";
+import { scoreComposition } from "../core/score.mjs";
+import { synthKit } from "../sound/synth.mjs";
+import { runGoldTest } from "../gold/test.mjs";
+import { captureProduct } from "../capture/capture.mjs";
 const root = fileURLToPath(new URL("../../", import.meta.url));
+export function listSkills() {
+  const directory = join(root, "skills");
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const path = join(directory, entry.name, "SKILL.md");
+      if (!existsSync(path)) return null;
+      const source = readFileSync(path, "utf8");
+      const header = source.match(/^---\s*\n([\s\S]*?)\n---/);
+      const name = header?.[1].match(/^name:\s*(.+)$/m)?.[1] || entry.name;
+      const description =
+        header?.[1].match(/^description:\s*(.+)$/m)?.[1] || "";
+      return { name, description, path };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 export function initProject(dir) {
   dir = resolve(dir);
   if (existsSync(join(dir, "motion.md")))
@@ -58,8 +79,16 @@ function usage() {
   motioon studio [motion.md] [--port 4400] [--out video.mp4] Open the local editing studio
   motioon inspect [motion.md] --frames 0,30,60 [-o frames]
   motioon frame [motion.md] 120 [-o out.png]      Render one PNG frame
-  motioon render [motion.md] -o out.mp4 [--format mp4|webm]
+  motioon render [motion.md] -o out.mp4 [--format mp4|webm]  Export with sound + out.silent.mp4
                  [--quality draft|high] [--workers 2] [--frames 0:60] [--no-cache]
+  motioon score [motion.md]               Score an openai-launch composition
+  motioon sound synth [motion.md] [--force] Generate a local dry cue kit
+  motioon test gold/openai-8s [--review]  Render and compare a frozen gold clip
+  motioon test gold/project-capture      Test the captured video pipeline
+  motioon test gold/micro-motion-8s       Test cursor, event and behavior choreography
+  motioon capture [motion.md] --url URL [--flow flow.json] [--seconds 2]
+                 [--out assets/ui/capture.webm] [--id ui.capture]
+  motioon skills                         List bundled agent skills
   motioon agent                          Print skill and MCP connection details
   motioon mcp                            Start the MCP server on stdio
 
@@ -72,11 +101,16 @@ export async function main(argv = process.argv.slice(2)) {
     const { startMcp } = await import("../mcp/server.mjs");
     return startMcp();
   }
+  if (cmd === "skills") {
+    console.log(JSON.stringify(listSkills(), null, 2));
+    return;
+  }
   if (cmd === "agent") {
     console.log(
       JSON.stringify(
         {
           skill: join(root, "skills/motion/SKILL.md"),
+          skills: listSkills(),
           mcpServers: {
             motioon: {
               command: process.execPath,
@@ -95,6 +129,54 @@ export async function main(argv = process.argv.slice(2)) {
   if (["new", "init"].includes(cmd)) {
     if (!argv[1]) throw new Error("Provide a project directory.");
     console.log(JSON.stringify(initProject(argv[1]), null, 2));
+    return;
+  }
+  if (cmd === "sound" && argv[1] === "synth") {
+    const file = resolve(argv[2] || "motion.md");
+    console.log(
+      JSON.stringify(
+        synthKit(dirname(file), { force: argv.includes("--force") }),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  if (cmd === "test") {
+    const target = argv[1] || "gold/openai-8s";
+    const folder = [
+      "gold/openai-8s",
+      "gold/project-capture",
+      "gold/micro-motion-8s",
+    ].includes(target)
+      ? join(root, "test", target)
+      : resolve(target);
+    console.log(
+      JSON.stringify(
+        await runGoldTest(folder, {
+          review: argv.includes("--review"),
+          update: argv.includes("--update"),
+        }),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  if (cmd === "capture") {
+    const target = resolve(
+      argv[1] && !argv[1].startsWith("-") ? argv[1] : "motion.md",
+    );
+    const result = await captureProduct(target, {
+      url: option(argv, "--url", undefined),
+      flow: option(argv, "--flow", undefined),
+      seconds: Number(option(argv, "--seconds", 2)),
+      out: option(argv, "--out", "assets/ui/capture.webm"),
+      id: option(argv, "--id", "ui.capture"),
+      width: Number(option(argv, "--width", 1440)),
+      height: Number(option(argv, "--height", 900)),
+    });
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
   const file = resolve(
@@ -117,6 +199,13 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(
       JSON.stringify(describeComposition(loadComposition(file)), null, 2),
     );
+    return;
+  }
+  if (cmd === "score") {
+    const result = scoreComposition(loadComposition(file));
+    if (!result) throw new Error("Scoring requires recipe: openai-launch.");
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.ok) process.exitCode = 1;
     return;
   }
   if (cmd === "compile") {

@@ -681,6 +681,17 @@ export function describe(session) {
     workarea: session.workarea,
     playing: session.playing,
     state: "saved",
+    recipe: session.comp.recipeId,
+    audio: {
+      master: session.comp.audioMaster,
+      cues: session.comp.audio.map((a) => ({
+        id: a.id,
+        kind: a.kind,
+        cue: a.cue,
+        at: round3(a.at),
+        label: `${a.id}${a.cue ? ` #${a.cue}` : ""} @ ${round3(a.at)}s`,
+      })),
+    },
     scenes: session.comp.scenes.map((s) => ({
       id: s.id,
       start: round3(s.start),

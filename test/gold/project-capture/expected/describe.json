@@ -1,0 +1,427 @@
+{
+  "id": "composition",
+  "title": "Motioon — show the work",
+  "version": 1,
+  "width": 1920,
+  "height": 1080,
+  "aspect": "1920:1080",
+  "fps": 24,
+  "duration": 8,
+  "background": "#FFFFFF",
+  "safe_area": 64,
+  "theme": {
+    "accent": "#111111",
+    "text": "#111111",
+    "muted": "#8E8EA0",
+    "font_display": "Helvetica Neue, Arial, ui-sans-serif",
+    "font_body": "Helvetica Neue, Arial, ui-sans-serif"
+  },
+  "recipeId": "openai-launch",
+  "recipe": {
+    "id": "openai-launch",
+    "evidence": [
+      "references/openai-launch/208034-health.yml",
+      "references/openai-launch/208297-browser.yml",
+      "references/openai-launch/208804-drive.yml",
+      "references/openai-launch/209049-messages.yml",
+      "references/openai-launch/209199-stickers.yml",
+      "references/openai-launch/210066-word.yml"
+    ],
+    "card": {
+      "ground": [
+        "#FFFFFF",
+        "#0D0D0D"
+      ],
+      "ink": [
+        "#111111",
+        "#FFFFFF"
+      ],
+      "max_colors": 3,
+      "max_text_layers": 2,
+      "max_motion_duration": 0.4
+    },
+    "product": {
+      "required": true,
+      "allowed_backdrop": "one-contextual-color-or-gradient",
+      "source": "cataloged-ui-image-or-video"
+    },
+    "timing": {
+      "min_long_hold": 1.6,
+      "transition": "cut"
+    },
+    "motion": {
+      "allowed": [
+        "rise",
+        "cut",
+        "none"
+      ],
+      "forbidden": [
+        "fade-up",
+        "blur-in",
+        "pop",
+        "bounce"
+      ]
+    },
+    "sound": {
+      "cut": "dry-tick",
+      "rise": "muted-arrive",
+      "bed_max_gain_db": -22,
+      "default_bed": false,
+      "lufs": -16,
+      "peak": -1.5
+    }
+  },
+  "assets": {
+    "tick.cut": "assets/audio/tick.cut.wav",
+    "tick.point": "assets/audio/tick.point.wav",
+    "ui.capture": "assets/ui/capture.webm",
+    "tick.arrive": "assets/audio/tick.arrive.wav",
+    "tick.air": "assets/audio/tick.air.wav"
+  },
+  "assetInfo": [
+    {
+      "id": "tick.cut",
+      "src": "assets/audio/tick.cut.wav",
+      "type": "sting"
+    },
+    {
+      "id": "tick.point",
+      "src": "assets/audio/tick.point.wav",
+      "type": "sting"
+    },
+    {
+      "id": "ui.capture",
+      "src": "assets/ui/capture.webm",
+      "type": "video"
+    },
+    {
+      "id": "tick.arrive",
+      "src": "assets/audio/tick.arrive.wav",
+      "type": "sting"
+    },
+    {
+      "id": "tick.air",
+      "src": "assets/audio/tick.air.wav",
+      "type": "room"
+    }
+  ],
+  "audio": [
+    {
+      "id": "point",
+      "kind": "sting",
+      "src": "asset:tick.point",
+      "at": 0,
+      "gain_db": -17,
+      "oneshot": true,
+      "cue": null,
+      "trim": 0,
+      "duration": null,
+      "volume": 1,
+      "fade_in": 0,
+      "fade_out": 0,
+      "duck_under": [],
+      "duck_db": -8
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "src": "asset:tick.cut",
+      "at": 1.2,
+      "gain_db": -18,
+      "oneshot": true,
+      "cue": 1,
+      "trim": 0,
+      "duration": null,
+      "volume": 1,
+      "fade_in": 0,
+      "fade_out": 0,
+      "duck_under": [],
+      "duck_db": -8
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "src": "asset:tick.cut",
+      "at": 4,
+      "gain_db": -18,
+      "oneshot": true,
+      "cue": 2,
+      "trim": 0,
+      "duration": null,
+      "volume": 1,
+      "fade_in": 0,
+      "fade_out": 0,
+      "duck_under": [],
+      "duck_db": -8
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "src": "asset:tick.cut",
+      "at": 6.6,
+      "gain_db": -18,
+      "oneshot": true,
+      "cue": 3,
+      "trim": 0,
+      "duration": null,
+      "volume": 1,
+      "fade_in": 0,
+      "fade_out": 0,
+      "duck_under": [],
+      "duck_db": -8
+    }
+  ],
+  "audioMaster": {
+    "lufs": -16,
+    "peak": -1.5,
+    "sample_rate": 48000
+  },
+  "catalogPath": "./assets/catalog.json",
+  "scenes": [
+    {
+      "id": "point",
+      "kind": "card",
+      "start": 0,
+      "at": null,
+      "duration": 1.2,
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "elements": [
+        {
+          "id": "point",
+          "type": "shape",
+          "shape": "circle",
+          "x": "50%",
+          "y": "50%",
+          "w": 16,
+          "h": 16,
+          "fill": "#111111",
+          "at": 0,
+          "duration": 1.2,
+          "enter": null,
+          "exit": null,
+          "z": 0
+        }
+      ],
+      "format": "motion"
+    },
+    {
+      "id": "promise",
+      "kind": "card",
+      "start": 1.2,
+      "at": null,
+      "duration": 2.8,
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "elements": [
+        {
+          "id": "promise",
+          "type": "text",
+          "text": "Show the work.",
+          "x": "50%",
+          "y": "50%",
+          "w": 1320,
+          "font_size": 72,
+          "font_weight": 500,
+          "letter_spacing": -2,
+          "line_height": 1,
+          "color": "#111111",
+          "enter": {
+            "preset": "rise",
+            "duration": 0.32,
+            "delay": 0,
+            "easing": "cubic-bezier(0.16, 1, 0.3, 1)"
+          },
+          "at": 0,
+          "duration": 2.8,
+          "exit": null,
+          "z": 0
+        }
+      ],
+      "format": "motion"
+    },
+    {
+      "id": "product",
+      "kind": "ui",
+      "start": 4,
+      "at": null,
+      "duration": 2.6,
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "elements": [
+        {
+          "id": "studio-ui",
+          "type": "video",
+          "src": "asset:ui.capture",
+          "trim": 7.6,
+          "x": "50%",
+          "y": "50%",
+          "w": 1560,
+          "h": 975,
+          "fit": "contain",
+          "at": 0,
+          "duration": 2.6,
+          "enter": null,
+          "exit": null,
+          "z": 0
+        }
+      ],
+      "format": "motion"
+    },
+    {
+      "id": "name",
+      "kind": "card",
+      "start": 6.6,
+      "at": null,
+      "duration": 1.4,
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "elements": [
+        {
+          "id": "name",
+          "type": "text",
+          "text": "motioon",
+          "x": "50%",
+          "y": "50%",
+          "w": 800,
+          "font_size": 88,
+          "font_weight": 500,
+          "letter_spacing": -3,
+          "color": "#111111",
+          "at": 0,
+          "duration": 1.4,
+          "enter": null,
+          "exit": null,
+          "z": 0
+        }
+      ],
+      "format": "motion"
+    }
+  ],
+  "catalog": {
+    "tick.cut": {
+      "src": "assets/audio/tick.cut.wav",
+      "kind": "sting",
+      "dur": 0.12
+    },
+    "tick.point": {
+      "src": "assets/audio/tick.point.wav",
+      "kind": "sting",
+      "dur": 0.2
+    },
+    "ui.capture": {
+      "src": "assets/ui/capture.webm",
+      "kind": "video",
+      "dur": 11.68,
+      "w": 1440,
+      "h": 900
+    },
+    "tick.arrive": {
+      "src": "assets/audio/tick.arrive.wav",
+      "kind": "sting",
+      "dur": 0.3
+    },
+    "tick.air": {
+      "src": "assets/audio/tick.air.wav",
+      "kind": "room",
+      "dur": 8
+    }
+  },
+  "cueSheet": [
+    {
+      "id": "point",
+      "kind": "sting",
+      "cue": null,
+      "at": 0,
+      "label": "point @ 0s"
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "cue": 1,
+      "at": 1.2,
+      "label": "cuts #1 @ 1.2s"
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "cue": 2,
+      "at": 4,
+      "label": "cuts #2 @ 4s"
+    },
+    {
+      "id": "cuts",
+      "kind": "sting",
+      "cue": 3,
+      "at": 6.6,
+      "label": "cuts #3 @ 6.6s"
+    }
+  ],
+  "score": {
+    "recipe": "openai-launch",
+    "score": 10,
+    "maximum": 10,
+    "ok": true,
+    "checks": [
+      {
+        "id": "real-product",
+        "pass": true,
+        "message": "Include a cataloged UI image or video shot."
+      },
+      {
+        "id": "hard-cuts",
+        "pass": true,
+        "message": "Use hard cuts between shots."
+      },
+      {
+        "id": "hold",
+        "pass": true,
+        "message": "Hold at least one shot for 1.6s."
+      },
+      {
+        "id": "no-fade-up",
+        "pass": true,
+        "message": "Avoid fade-up entrances."
+      },
+      {
+        "id": "sparse-card-copy",
+        "pass": true,
+        "message": "Keep cards to two text layers or fewer."
+      },
+      {
+        "id": "card-colors",
+        "pass": true,
+        "message": "Limit each card to ground, ink and one muted color."
+      },
+      {
+        "id": "one-entrance",
+        "pass": true,
+        "message": "Use at most one entrance per shot."
+      },
+      {
+        "id": "brief-move",
+        "pass": true,
+        "message": "Keep entrance motion within 400ms."
+      },
+      {
+        "id": "cut-cues",
+        "pass": true,
+        "message": "Place a sting within one frame of every cut."
+      },
+      {
+        "id": "quiet-bed",
+        "pass": true,
+        "message": "Keep music at -22dB or quieter."
+      }
+    ],
+    "warnings": []
+  }
+}

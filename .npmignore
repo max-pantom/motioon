@@ -1,0 +1,8 @@
+**/.motioon/**
+**/dist/**
+**/node_modules/**
+**/*.mp4
+**/*.webm
+**/*.mp4.json
+**/*.webm.json
+**/inspection*/**

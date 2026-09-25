@@ -5,7 +5,7 @@ width: 1920
 height: 1080
 fps: 30
 duration: 10
-background: "#FAF5EE"
+background: "#FFF"
 theme:
   accent: "#E8590C"
   text: "#1C1917"
@@ -104,7 +104,7 @@ elements:
     text: ""
     font_size: 72
     font_weight: 800
-    color: "#E8590C"
+    color: "#e8590c"
     x: 50%
     y: 84%
     count:
@@ -119,6 +119,15 @@ elements:
         start: 1.05
         duration: 0.7
         easing: spring(3, 12)
+    split: null
+    stagger: 0.045
+    scale: 1
+    rotation: 0
+    opacity: 1
+    at: 0
+    duration: 4.3
+    hidden: false
+    enter: none
   - id: stat-label
     type: text
     role: caption

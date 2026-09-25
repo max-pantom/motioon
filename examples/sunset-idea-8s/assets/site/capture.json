@@ -1,0 +1,158 @@
+{
+  "capturedAt": "2026-09-23T19:17:22.502Z",
+  "source": "http://127.0.0.1:3000/",
+  "homeInfo": {
+    "title": "Sunset — the secondary market for software",
+    "viewport": {
+      "width": 1600,
+      "height": 900
+    },
+    "headings": [
+      "Good projects should not disappear.",
+      "Featured",
+      "New on Sunset",
+      "Browse projects",
+      "Developer tools",
+      "Projects worth continuing",
+      "Already earning",
+      "Built, never launched",
+      "Recently acquired",
+      "Got a project you stopped working on?"
+    ],
+    "listingLinks": [
+      {
+        "text": "KoiKoi is a fast, local-first moodboard for images, GIFs, videos, saved pages, and articles. Everything stays in folders on your computer—no account or cloud sync required.",
+        "href": "/listings/a8e6dfe9-b5c8-447c-b61a-2d64841218d7"
+      },
+      {
+        "text": "",
+        "href": "/listings/a8e6dfe9-b5c8-447c-b61a-2d64841218d7"
+      },
+      {
+        "text": "Nomo$500Portfolio pages from a single MD.",
+        "href": "/listings/acd06aa4-5f3c-44a8-a91a-6b1a67e2f8df"
+      },
+      {
+        "text": "",
+        "href": "/listings/acd06aa4-5f3c-44a8-a91a-6b1a67e2f8df"
+      },
+      {
+        "text": "Comet$1,200Connect Codex and CC to your socials.Mock project",
+        "href": "/listings/00000000-0000-4000-8000-000000000103"
+      },
+      {
+        "text": "",
+        "href": "/listings/00000000-0000-4000-8000-000000000103"
+      },
+      {
+        "text": "KoiKoi is a fast, local-first moodboard for images, GIFs, videos, saved pages, and articles. Everything stays in folders on your computer—no account or cloud sync required.",
+        "href": "/listings/a8e6dfe9-b5c8-447c-b61a-2d64841218d7"
+      },
+      {
+        "text": "",
+        "href": "/listings/a8e6dfe9-b5c8-447c-b61a-2d64841218d7"
+      },
+      {
+        "text": "Nomo$500Portfolio pages from a single MD.",
+        "href": "/listings/acd06aa4-5f3c-44a8-a91a-6b1a67e2f8df"
+      },
+      {
+        "text": "",
+        "href": "/listings/acd06aa4-5f3c-44a8-a91a-6b1a67e2f8df"
+      },
+      {
+        "text": "Pulsar$950Harness data insights for better decision-making.Mock project",
+        "href": "/listings/00000000-0000-4000-8000-000000000105"
+      },
+      {
+        "text": "Comet$1,200Connect Codex and CC to your socials.Mock project",
+        "href": "/listings/00000000-0000-4000-8000-000000000103"
+      }
+    ],
+    "images": [
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero-built.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero-hands.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero-built.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 2180,
+        "src": "http://127.0.0.1:3000/brand/sunset-hero-hands.png"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 512,
+        "src": "https://pub-424885fb33244b3b81fb678952aed1f3.r2.dev/projects/e226eb19-43ed-4c2d-bcac-c97943c907c7/35673faf-f7cd-49df-8b5d-4b304e04e4cf/icon.webp"
+      },
+      {
+        "alt": "Screenshot of Koi",
+        "loaded": true,
+        "width": 500,
+        "src": "https://pub-424885fb33244b3b81fb678952aed1f3.r2.dev/projects/e226eb19-43ed-4c2d-bcac-c97943c907c7/77200d96-23a6-49a4-b999-7fd7af71cf88/thumb.webp"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 512,
+        "src": "https://pub-424885fb33244b3b81fb678952aed1f3.r2.dev/projects/7f644bb6-eadc-43c2-a682-03debaf3dde9/7c2a3431-9724-4ea4-a920-3ffe5db0103f/icon.webp"
+      },
+      {
+        "alt": "Screenshot of Nomo",
+        "loaded": true,
+        "width": 500,
+        "src": "https://pub-424885fb33244b3b81fb678952aed1f3.r2.dev/projects/7f644bb6-eadc-43c2-a682-03debaf3dde9/df4c672f-c751-4595-8f23-7329dea084ae/thumb.webp"
+      },
+      {
+        "alt": "",
+        "loaded": true,
+        "width": 40,
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ2"
+      },
+      {
+        "alt": "Screenshot of Comet",
+        "loaded": true,
+        "width": 1600,
+        "src": "http://127.0.0.1:3000/showcase/comet.jpg"
+      }
+    ]
+  },
+  "project": {
+    "title": "Nomo",
+    "href": "/listings/acd06aa4-5f3c-44a8-a91a-6b1a67e2f8df",
+    "card": {
+      "x": 789,
+      "y": 416,
+      "width": 516,
+      "height": 348.71875
+    },
+    "status": "captured"
+  }
+}

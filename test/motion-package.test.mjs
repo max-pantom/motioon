@@ -5,12 +5,17 @@ import {
   scene,
   toMarkdown,
   hero,
+  text,
   label,
   sub,
   caption,
   shape,
   svgEl,
   group,
+  cursor,
+  component,
+  number,
+  mask,
   tween,
   tracks,
   countUp,
@@ -183,4 +188,57 @@ test("group helper nests children; element builders set defaults", () => {
   assert.equal(sub("s", "S").role, "sub");
   assert.equal(caption("c", "C").type, "caption");
   assert.equal(svgEl("v", "<svg/>").type, "svg");
+});
+
+test("brand and interaction builders survive motion.md serialization", () => {
+  const f = film({
+    title: "Interaction",
+    duration: 2,
+    brand: {
+      accent: "#0071E3",
+      typeScale: { title: 48 },
+      spacing: [8, 16],
+      radius: 20,
+    },
+  });
+  f.scene("action", {
+    duration: 2,
+    cursor: {
+      x: "90%",
+      y: "80%",
+      actions: [
+        cursor.moveTo(["50%", "50%"], { duration: 0.5 }),
+        cursor.click({ at: 0.8, event: "select" }),
+      ],
+    },
+    elements: [
+      component.decompose("card", [
+        shape("surface", "rect", {
+          w: 400,
+          h: 200,
+          fill: "#EEEEEE",
+          ...mask.reveal({ on: "select", duration: 0.3 }),
+        }),
+      ]),
+      text("typed", "Software", {
+        ...text.type({ cps: 9, caret_color: "#0071E3" }),
+      }),
+    ],
+  });
+  const comp = parseMotionMarkdown(f.md());
+  assertValid(comp);
+  assert.equal(comp.brand.accent, "#0071E3");
+  assert.equal(comp.events.select, 0.8);
+  assert.equal(
+    comp.scenes[0].elements[0].children[0].behaviors[0].type,
+    "mask",
+  );
+  assert.equal(comp.scenes[0].elements[1].typewriter.caret_color, "#0071E3");
+  assert.deepEqual(number.count(10), countUp(10));
+  assert.equal(component.enter("fade").enter.preset, "fade");
+  assert.equal(component.transitionTo({ scale: [0.9, 1] }).animate.scale.to, 1);
+  assert.deepEqual(
+    text.replace([{ at: 1, text: "Done" }]),
+    swap([{ at: 1, text: "Done" }]),
+  );
 });

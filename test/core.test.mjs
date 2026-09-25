@@ -16,7 +16,11 @@ import {
   assertValid,
 } from "../packages/core/validate.mjs";
 import { patchSource, revisionOf } from "../packages/core/patch.mjs";
-import { compileToHtml, projectPath } from "../packages/core/index.mjs";
+import {
+  compileToHtml,
+  projectPath,
+  loadComposition,
+} from "../packages/core/index.mjs";
 const sample = readFileSync(
   new URL("../examples/product-launch/motion.md", import.meta.url),
   "utf8",
@@ -160,4 +164,180 @@ test("kinetic text compiles token spans and accepts advanced transitions", () =>
   assert.match(output, /class="motion-token"/);
   assert.equal(comp.scenes[0].transition.type, "zoom");
   assert.equal(comp.scenes[0].elements[1].split, "words");
+});
+
+test("openai recipe applies defaults and expands audio cue-sheet oneshots", () => {
+  const comp = parseMotionMarkdown(`---
+title: Recipe fixture
+recipe: openai
+width: 640
+height: 360
+fps: 30
+duration: 2
+audio:
+  master: {lufs: -16, peak: -1.5, sample_rate: 48000}
+  tracks:
+    - id: tick
+      kind: sting
+      src: ./tick.wav
+      at: [0, 1.2]
+      gain_db: -16
+---
+## scene: intro
+\`\`\`motion
+duration: 2
+elements:
+  - id: title
+    type: text
+    text: Hello
+    enter: {preset: rise, duration: 0.32, easing: "cubic-bezier(0.16, 1, 0.3, 1)"}
+\`\`\`
+`);
+  assert.equal(comp.background, "#FFFFFF");
+  assert.equal(comp.audio.length, 2);
+  assert.deepEqual(
+    comp.audio.map((a) => a.at),
+    [0, 1.2],
+  );
+  assert.equal(comp.audioMaster.sample_rate, 48000);
+  assert.equal(validateComposition(comp).ok, true);
+  assert.match(compileToHtml(comp), /name === "rise"/);
+});
+
+test("openai recipe lints forbidden motion and sound", () => {
+  const comp = parseMotionMarkdown(`---
+title: Bad recipe fixture
+recipe: openai
+duration: 1
+audio:
+  tracks:
+    - {id: sweep, kind: whoosh, src: ./sweep.wav, at: 0}
+---
+## scene: intro
+\`\`\`motion
+duration: 1
+elements:
+  - {id: title, type: text, text: Hello, enter: fade-up 0.3}
+\`\`\`
+`);
+  const result = validateComposition(comp);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((e) => e.includes("whoosh")));
+  assert.ok(result.errors.some((e) => e.includes("fade-up")));
+});
+
+test("events synchronize cursor, behaviors and audio without raw keyframes", () => {
+  const comp = parseMotionMarkdown(`---
+title: Behaviors
+width: 640
+height: 360
+duration: 2
+events: {open: 0.4}
+paths:
+  arc: {type: bezier, points: [[0, 0], [100, 0], [100, 100], [200, 100]]}
+audio:
+  tracks:
+    - {id: click, kind: sting, src: ./click.wav, at: "event:open"}
+---
+## scene: demo
+\`\`\`motion
+duration: 2
+camera: {type: push, from: 1, to: 1.04, follow: cursor, strength: 0.06}
+cursor:
+  x: 90%
+  y: 80%
+  actions:
+    - {type: move, at: 0, to: [50%, 50%], duration: 0.3}
+    - {type: click, at: 0.4, event: open}
+elements:
+  - id: title
+    type: text
+    text: Hello
+    behaviors:
+      - {type: mask, shape: circle, origin: cursor, on: open}
+      - {type: blur-in, from: 18, to: 0, on: open}
+      - {type: path-follow, path: arc, duration: 1}
+\`\`\`
+`);
+  assertValid(comp);
+  assert.equal(comp.events.open, 0.4);
+  assert.equal(comp.audio[0].at, 0.4);
+  assert.deepEqual(
+    comp.scenes[0].elements[0].behaviors.map((b) => b.type),
+    ["mask", "blur", "path"],
+  );
+  assert.match(compileToHtml(comp), /motion-cursor/);
+});
+
+test("banger example normalizes timed paths, typewriter, tilt and camera anchor", () => {
+  const comp = loadComposition(
+    new URL("../examples/banger-8s/motion.md", import.meta.url).pathname,
+  );
+  assertValid(comp);
+  assert.equal(comp.scenes[0].elements[1].path.length, 2);
+  assert.equal(comp.scenes[1].cursor.path[1].click, true);
+  assert.equal(comp.scenes[1].camera.anchor[0], "52%");
+  const group = comp.scenes[1].elements[0];
+  assert.equal(group.enter.preset, "tilt-in");
+  assert.equal(group.keyframes.rotateY[0].v, -16);
+  assert.equal(
+    group.children.find((el) => el.id === "typed").typewriter.cps,
+    10,
+  );
+  assert.equal(comp.audio.find((track) => track.id === "click").at, 2.2);
+});
+
+test("Sunset film uses captured site pages, timed clicks and source lockup proportions", () => {
+  const comp = loadComposition(
+    new URL("../examples/sunset-idea-8s/motion.md", import.meta.url).pathname,
+  );
+  assertValid(comp);
+  assert.equal(comp.duration, 14);
+  assert.equal(comp.brand.accent, "#0071E3");
+  assert.equal(comp.brand.logoLockup.gap, 8);
+  assert.ok(
+    Math.abs(comp.audio.find((track) => track.id === "list-click").at - 3.15) <
+      1e-9,
+  );
+  assert.equal(comp.audio.find((track) => track.id === "project-click").at, 8);
+  assert.equal(comp.scenes[2].elements[0].children.length, 3);
+  assert.equal(comp.scenes[2].elements[0].children[1].src, "asset:homepage");
+  assert.equal(comp.scenes[3].elements[1].src, "asset:nomo-page");
+  assert.equal(comp.scenes[0].elements[0].text, "Buy and sell software.");
+  assert.equal(comp.scenes[0].elements[0].typewriter.cps, 13);
+  assert.equal(comp.scenes[0].elements[0].enter.preset, "fade");
+  assert.equal(comp.scenes[4].elements[1].text, "Software changes hands.");
+  assert.equal(
+    comp.scenes.some((scene) => scene.elements.some((el) => el.count)),
+    false,
+  );
+  const page = compileToHtml(comp);
+  assert.match(page, /brand-lockup-inner/);
+  assert.match(page, /gap:38\.666/);
+  assert.match(page, /width:135\.333/);
+});
+
+test("Sunset dark tour follows captured pages with two clicks and 3D entrances", () => {
+  const comp = loadComposition(
+    new URL("../examples/sunset-dark-tour/motion.md", import.meta.url).pathname,
+  );
+  assertValid(comp);
+  assert.equal(comp.duration, 12);
+  assert.deepEqual(
+    comp.scenes.map((scene) => scene.id),
+    ["home", "nomo", "developer"],
+  );
+  assert.equal(comp.audio.find((track) => track.id === "home-click").at, 3.45);
+  assert.equal(
+    comp.audio.find((track) => track.id === "profile-click").at,
+    7.5,
+  );
+  assert.deepEqual(
+    comp.scenes.map((scene) => scene.elements[0].children[1].src),
+    ["asset:home", "asset:project", "asset:developer"],
+  );
+  for (const scene of comp.scenes) {
+    assert.equal(scene.elements[0].enter.preset, "tilt-in");
+    assert.equal(scene.elements[0].keyframes.rotateY.at(-1).v, 0);
+  }
 });

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "point",
+    "kind": "sting",
+    "src": "asset:tick.point",
+    "at": 0,
+    "gain_db": -17
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 1.1,
+    "gain_db": -18
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 2.5,
+    "gain_db": -18
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 4.7,
+    "gain_db": -18
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 6.550000000000001,
+    "gain_db": -18
+  },
+  {
+    "id": "select",
+    "kind": "sting",
+    "src": "asset:tick.point",
+    "at": 4.28,
+    "gain_db": -19
+  }
+]

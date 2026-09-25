@@ -14,8 +14,8 @@
     "check": "node bin/motion.mjs validate examples/product-launch/motion.md",
     "setup": "playwright install chromium --only-shell",
     "mcp": "node packages/mcp/server.mjs",
-    "format": "prettier --write \"packages/**/*.{mjs,js,css,html}\" \"bin/*.mjs\" \"test/*.mjs\"",
-    "format:check": "prettier --check \"packages/**/*.{mjs,js,css,html}\" \"bin/*.mjs\" \"test/*.mjs\""
+    "format": "prettier --write \"packages/**/*.{mjs,js,jsx,css,html}\" \"bin/*.mjs\" \"test/*.mjs\"",
+    "format:check": "prettier --check \"packages/**/*.{mjs,js,jsx,css,html}\" \"bin/*.mjs\" \"test/*.mjs\""
   },
   "engines": {
     "node": ">=22"
@@ -28,15 +28,23 @@
     "examples/*/assets/**/*",
     "examples/*/*.css",
     "examples/*/*.js",
+    "references",
+    "test/gold/*/motion.md",
+    "test/gold/*/flow.json",
+    "test/gold/*/assets/**",
+    "test/gold/*/expected/**",
     "SPEC.md",
     "README.md",
     "docs"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "esbuild": "^0.28.2",
     "ffmpeg-static": "^5.2.0",
     "motion": "^13.4.0",
     "playwright": "1.55.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "yaml": "^2.7.0",
     "zod": "^3.24.0"
   },

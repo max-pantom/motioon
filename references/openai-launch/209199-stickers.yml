@@ -1,0 +1,19 @@
+ref: chatgpt-stickers
+source: "@ChatGPT-2091996387512602788.mp4"
+sha256: 47612ce4c5ecc2fe9c83ff7b4fe8dddfbd5baa7b1731e2d86e38b396b0bbe115
+duration: 30.08
+fps: 30
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "multicolor sticker assets"]
+type: grotesque-medium
+detected_cuts_006: [5.87, 9.03, 13.27, 20.23, 22.97]
+cut_detection_note: Three detections around 13.3s were merged as one cut.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 5.87], kind: card, copy: "Create / Create custom stickers with ChatGPT", move: sticker-collage}
+  - {t: [5.87, 13.27], kind: ui, copy: "Create a 3D sticker pack based on Photo", move: selections-and-generated-grid}
+  - {t: [13.27, 20.23], kind: ui, copy: "Hand-drawn sticker pack and generation", move: gallery-selection}
+  - {t: [20.23, 22.97], kind: card, copy: "Share them on iMessage & WhatsApp", move: none}
+  - {t: [22.97, 28], kind: ui, copy: "Messaging sticker picker", move: screen-focus}
+  - {t: [28, 30.08], kind: end-card, copy: "OpenAI mark", move: none}
+observation: Original image assets are the proof; color limits apply to typography and ground, not product content.

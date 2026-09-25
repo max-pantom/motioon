@@ -1,3 +1,11 @@
+import {
+  highlightSource,
+  replaceSourceValue,
+  shiftedPosition,
+  sourceColors,
+  sourceValueAt,
+} from "./source-tools.js";
+
 const $ = (id) => document.getElementById(id);
 const esc = (s = "") =>
   String(s)
@@ -7,10 +15,10 @@ const esc = (s = "") =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 const palette = [
-  ["#ece6fc", "#7051a7"],
-  ["#dff2ee", "#277564"],
-  ["#e1eafb", "#3766a3"],
-  ["#fbe6e7", "#a74b63"],
+  ["#2d3922", "#b4df78"],
+  ["#342d24", "#dfbd79"],
+  ["#2d2b38", "#b8a4e4"],
+  ["#3a2931", "#e29bb8"],
 ];
 let project,
   comp,
@@ -27,7 +35,9 @@ let project,
   audio = [],
   saveBusy = false,
   noticeTimer,
-  exportTimer;
+  exportTimer,
+  completedExportId,
+  canvasMode = false;
 function notify(message, error = false) {
   clearTimeout(noticeTimer);
   $("status").textContent = message;
@@ -79,7 +89,15 @@ function currentScene() {
   return comp.scenes.find((s) => s.id === sceneId) || comp.scenes[0];
 }
 function currentElement() {
-  return currentScene()?.elements.find((e) => e.id === elementId);
+  return findLayer(currentScene()?.elements, elementId);
+}
+function findLayer(elements = [], id) {
+  for (const element of elements) {
+    if (element.id === id) return element;
+    const child = findLayer(element.children, id);
+    if (child) return child;
+  }
+  return null;
 }
 const title = (id) =>
   id.replaceAll("-", " ").replace(/^./, (c) => c.toUpperCase());
@@ -107,12 +125,27 @@ function fit() {
 }
 function syncAudio(force = false) {
   for (const { node, track } of audio) {
-    const local = time - track.at + track.trim,
+    const timelineLocal = time - track.at,
+      local = timelineLocal + track.trim,
+      sourceRemaining = Number.isFinite(node.duration)
+        ? Math.max(0, node.duration - track.trim)
+        : null,
+      cueDuration = track.duration ?? (track.oneshot ? sourceRemaining : null),
       active =
-        time >= track.at &&
-        (track.duration == null || time < track.at + track.duration);
+        timelineLocal >= 0 &&
+        (cueDuration == null || timelineLocal < cueDuration);
     node.muted = !$("sound").checked;
-    node.volume = Math.min(1, track.volume);
+    let gain = track.volume * 10 ** ((track.gain_db ?? 0) / 20);
+    if (active && track.fade_in > 0)
+      gain *= Math.min(1, timelineLocal / track.fade_in);
+    if (
+      active &&
+      track.fade_out > 0 &&
+      cueDuration != null &&
+      timelineLocal > cueDuration - track.fade_out
+    )
+      gain *= Math.max(0, (cueDuration - timelineLocal) / track.fade_out);
+    node.volume = Math.max(0, Math.min(1, gain));
     if (active) {
       if (force || Math.abs(node.currentTime - local) > 0.15) {
         try {
@@ -121,7 +154,14 @@ function syncAudio(force = false) {
       }
       if (playing && node.paused) node.play().catch(() => {});
       if (!playing) node.pause();
-    } else node.pause();
+    } else {
+      node.pause();
+      if (timelineLocal < 0 && node.currentTime !== track.trim) {
+        try {
+          node.currentTime = track.trim;
+        } catch {}
+      }
+    }
   }
 }
 function setTime(value) {
@@ -160,16 +200,23 @@ function rebuildAudio() {
   }
   audio = comp.audio.map((track) => {
     const src = track.src.replace(
-      /^asset:(?:\/\/)?([\w-]+)$/,
+      /^asset:(?:\/\/)?([\w.-]+)$/,
       (_, id) => comp.assets[id],
     );
-    return { track, node: new Audio(src) };
+    const node = new Audio(src);
+    node.preload = "auto";
+    node.addEventListener("loadedmetadata", () => syncAudio(true));
+    return { track, node };
   });
 }
 function install(value, { reload = true } = {}) {
   const token = value.token || project?.token;
   project = { ...value, token };
   comp = project.composition;
+  window.motioonComposition = comp;
+  window.dispatchEvent(
+    new CustomEvent("motioon:composition", { detail: comp }),
+  );
   sceneId = comp.scenes.some((s) => s.id === sceneId)
     ? sceneId
     : comp.scenes[0]?.id;
@@ -229,11 +276,18 @@ function select(scene, element = null, seek = true) {
   );
 }
 function renderLists() {
+  const layerButtons = (elements, depth = 0) =>
+    elements
+      .map(
+        (e) =>
+          `<button class="layer ${e.id === elementId ? "selected" : ""}" style="--depth:${depth}" data-element="${esc(e.id)}" aria-pressed="${e.id === elementId}"><span class="layer-icon" aria-hidden="true">${e.type === "text" ? "T" : e.type === "image" ? "▧" : e.type === "shape" ? "◇" : "⌘"}</span><span>${esc(e.text || title(e.id))}</span></button>${e.children?.length ? layerButtons(e.children, depth + 1) : ""}`,
+      )
+      .join("");
   $("scene-title").textContent = title(currentScene().id);
   $("scene-list").innerHTML = comp.scenes
     .map((s, i) => {
       const [tint, ink] = palette[i % palette.length];
-      return `<div class="scene-card" style="--tint:${tint};--ink:${ink}"><button class="scene-row ${s.id === sceneId ? "selected" : ""}" data-scene="${esc(s.id)}" aria-pressed="${s.id === sceneId}"><span class="scene-number">${String(i + 1).padStart(2, "0")}</span><span><strong>${esc(title(s.id))}</strong><small>${seconds(s.start)} – ${seconds(s.start + s.duration)}</small></span><span class="chevron" aria-hidden="true">${s.id === sceneId ? "⌄" : "›"}</span></button>${s.id === sceneId ? `<div class="layer-list">${s.elements.map((e) => `<button class="layer ${e.id === elementId ? "selected" : ""}" data-element="${esc(e.id)}" aria-pressed="${e.id === elementId}"><span class="layer-icon" aria-hidden="true">${e.type === "text" ? "T" : e.type === "image" ? "▧" : e.type === "shape" ? "◇" : "⌘"}</span><span>${esc(e.text || title(e.id))}</span></button>`).join("") || '<p class="empty">HTML scene · edit in source</p>'}</div>` : ""}</div>`;
+      return `<div class="scene-card" style="--tint:${tint};--ink:${ink}"><button class="scene-row ${s.id === sceneId ? "selected" : ""}" data-scene="${esc(s.id)}" aria-pressed="${s.id === sceneId}"><span class="scene-number">${String(i + 1).padStart(2, "0")}</span><span><strong>${esc(title(s.id))}</strong><small>${seconds(s.start)} – ${seconds(s.start + s.duration)}</small></span><span class="chevron" aria-hidden="true">${s.id === sceneId ? "⌄" : "›"}</span></button>${s.id === sceneId ? `<div class="layer-list">${layerButtons(s.elements) || '<p class="empty">HTML scene · edit in source</p>'}</div>` : ""}</div>`;
     })
     .join("");
   $("scene-list")
@@ -436,6 +490,76 @@ function renderTimeline() {
       }),
     );
 }
+function syncSourceHighlight() {
+  const input = $("source-text");
+  $("source-highlight").innerHTML = highlightSource(input.value);
+  $("source-highlight").scrollTop = input.scrollTop;
+  $("source-highlight").scrollLeft = input.scrollLeft;
+  $("source-colors").innerHTML =
+    sourceColors(input.value)
+      .map(
+        (color) =>
+          `<button type="button" class="source-color" data-color="${color}" title="Edit ${color}"><span style="background:${color}"></span>${color}</button>`,
+      )
+      .join("") || '<p class="muted">No hex colors in this source.</p>';
+}
+function inspectSource() {
+  const input = $("source-text");
+  const item = sourceValueAt(input.value, input.selectionStart);
+  const target = $("source-property");
+  if (!item) {
+    target.innerHTML = "";
+    $("source-hint").textContent =
+      "Tap a property in the source to inspect and change it.";
+    return;
+  }
+  $("source-hint").textContent = `Line ${item.line} · ${item.key}`;
+  const color = item.color;
+  const editable = color || item;
+  const value = color?.value || item.value;
+  const fullHex =
+    color && color.value.length === 4
+      ? `#${[...color.value.slice(1)].map((digit) => digit + digit).join("")}`
+      : color?.value;
+  target.innerHTML = `<label class="field">Value<input id="source-value" type="text" value="${esc(value)}" aria-label="${esc(item.key)} value"></label>${color ? `<label class="field">Color<input id="source-color-input" type="color" value="${fullHex}"></label>` : ""}<button type="button" id="source-apply" class="secondary">Apply value</button><p class="source-detail">${esc(item.key)} · ${editable.start + 1}–${editable.end}</p>`;
+  const apply = (next) => {
+    const value = String(next);
+    input.value = replaceSourceValue(input.value, editable, value);
+    input.focus();
+    input.setSelectionRange(editable.start, editable.start + value.length);
+    syncSourceHighlight();
+    inspectSource();
+  };
+  $("source-apply").onclick = () => apply($("source-value").value);
+  $("source-value").onkeydown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      apply(event.currentTarget.value);
+    }
+  };
+  if (color)
+    $("source-color-input").onchange = (event) => apply(event.target.value);
+}
+$("source-text").addEventListener("input", () => {
+  syncSourceHighlight();
+  inspectSource();
+});
+$("source-text").addEventListener("click", inspectSource);
+$("source-text").addEventListener("keyup", inspectSource);
+$("source-text").addEventListener("scroll", () => {
+  $("source-highlight").scrollTop = $("source-text").scrollTop;
+  $("source-highlight").scrollLeft = $("source-text").scrollLeft;
+});
+$("source-colors").onclick = (event) => {
+  const chip = event.target.closest("[data-color]");
+  if (!chip) return;
+  const input = $("source-text");
+  const index = input.value.toUpperCase().indexOf(chip.dataset.color);
+  if (index < 0) return;
+  input.focus();
+  input.setSelectionRange(index, index + chip.dataset.color.length);
+  inspectSource();
+};
 function openSource() {
   if (dirty) {
     notify("Save or discard your adjustments before editing source.", true);
@@ -444,6 +568,8 @@ function openSource() {
   setPlaying(false);
   $("source-text").value = project.source;
   $("source-error").textContent = "";
+  syncSourceHighlight();
+  inspectSource();
   $("source-dialog").showModal();
 }
 $("source-open").onclick = openSource;
@@ -528,10 +654,17 @@ $("export-open").onclick = () => {
     `${seconds(comp.duration)} · ${Math.ceil(comp.duration * comp.fps)} frames`;
   $("export-dialog").showModal();
 };
+function showExportDownloads() {
+  const choice = $("export-audio").value;
+  $("download").hidden = !completedExportId || choice === "without";
+  $("download-silent").hidden = !completedExportId || choice === "with";
+}
+$("export-audio").onchange = showExportDownloads;
 $("render").onclick = async () => {
   const button = $("render");
   button.disabled = true;
-  $("download").hidden = true;
+  completedExportId = null;
+  showExportDownloads();
   setProgress(0);
   $("export-progress").hidden = false;
   $("export-status").textContent = "Preparing your video…";
@@ -551,9 +684,13 @@ $("render").onclick = async () => {
           $("export-status").textContent =
             `Ready. ${value.result.frames} frames rendered in ${value.result.seconds}s.`;
           $("download").href = "/download/" + job.id;
-          $("download").hidden = false;
+          $("download-silent").href = "/download/" + job.id + "/silent";
+          completedExportId = job.id;
+          showExportDownloads();
           if (Motion?.animate) {
-            const dl = $("download");
+            const dl = $("download").hidden
+              ? $("download-silent")
+              : $("download");
             Motion.animate(
               dl,
               { opacity: [0, 1], scale: [0.92, 1.06, 1] },
@@ -603,22 +740,77 @@ $("scrubber").oninput = () => {
 };
 $("sound").onchange = () => syncAudio(true);
 $("fit-button").onclick = fit;
+$("canvas-mode").onclick = () => {
+  canvasMode = !canvasMode;
+  $("canvas-mode").setAttribute("aria-pressed", String(canvasMode));
+  $("composition").contentWindow.postMessage(
+    { type: "motion:edit-mode", enabled: canvasMode },
+    "*",
+  );
+  notify(
+    canvasMode
+      ? "Drag a layer on the canvas to move it. Changes save to motion.md."
+      : "Canvas move is off.",
+  );
+};
+async function moveCanvasLayer(id, dx, dy) {
+  if (!canvasMode || saveBusy || dirty) {
+    notify("Save pending adjustments before moving a layer.", true);
+    return;
+  }
+  const scene = comp.scenes.find((s) => findLayer(s.elements, id));
+  const layer = scene && findLayer(scene.elements, id);
+  if (!layer || scene.format !== "motion") return;
+  const x = shiftedPosition(layer.x, dx, comp.width);
+  const y = shiftedPosition(layer.y, dy, comp.height);
+  if (x == null || y == null) {
+    notify(
+      "This layer uses a position expression. Edit its position in source.",
+      true,
+    );
+    return;
+  }
+  saveBusy = true;
+  try {
+    await busBatch([
+      { op: "set", layer: id, prop: "x", value: x },
+      { op: "set", layer: id, prop: "y", value: y },
+    ]);
+    sceneId = scene.id;
+    elementId = id;
+    renderLists();
+    renderProperties();
+    notify(`${title(id)} moved and saved.`);
+  } catch (error) {
+    notify(error.message, true);
+  } finally {
+    saveBusy = false;
+  }
+}
 window.addEventListener("message", (event) => {
   if (event.source !== $("composition").contentWindow) return;
   if (event.data?.type === "motion:ready") {
     ready = true;
     setTime(time);
     $("composition").contentWindow.postMessage(
+      { type: "motion:edit-mode", enabled: canvasMode },
+      "*",
+    );
+    $("composition").contentWindow.postMessage(
       { type: "select", id: elementId },
       "*",
     );
   }
   if (event.data?.type === "motion:error") notify(event.data.message, true);
+  if (event.data?.type === "motion:drag") {
+    moveCanvasLayer(event.data.id, event.data.dx, event.data.dy);
+    return;
+  }
   const inbound =
     event.data?.type === "select" || event.data?.type === "motion:select";
   if (inbound) {
     for (const s of comp.scenes)
-      if (s.elements.some((e) => e.id === event.data.id))
+      if (findLayer(s.elements, event.data.id))
         select(s.id, event.data.id, false);
   }
 });

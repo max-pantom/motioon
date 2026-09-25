@@ -1,0 +1,30 @@
+[
+  {
+    "id": "point",
+    "kind": "sting",
+    "src": "asset:tick.point",
+    "at": 0,
+    "gain_db": -17
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 1.2,
+    "gain_db": -18
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 4,
+    "gain_db": -18
+  },
+  {
+    "id": "cuts",
+    "kind": "sting",
+    "src": "asset:tick.cut",
+    "at": 6.6,
+    "gain_db": -18
+  }
+]

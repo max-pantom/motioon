@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { build } from "esbuild";
 import {
   loadComposition,
   compileToHtml,
@@ -60,6 +61,36 @@ export async function startProjectServer(
     };
   };
   read();
+  const soundPanel = studio
+    ? (
+        await build({
+          entryPoints: [
+            new URL("../studio/sound-panel.jsx", import.meta.url).pathname,
+          ],
+          bundle: true,
+          write: false,
+          format: "iife",
+          platform: "browser",
+          jsx: "automatic",
+          minify: true,
+        })
+      ).outputFiles[0].contents
+    : null;
+  const studioShell = studio
+    ? (
+        await build({
+          entryPoints: [
+            new URL("../studio/studio-shell.jsx", import.meta.url).pathname,
+          ],
+          bundle: true,
+          write: false,
+          format: "iife",
+          platform: "browser",
+          jsx: "automatic",
+          minify: true,
+        })
+      ).outputFiles[0].contents
+    : null;
   const server = createServer(async (req, res) => {
     const send = (status, data, type = "application/json") => {
       res.writeHead(status, {
@@ -166,13 +197,17 @@ export async function startProjectServer(
         return send(job ? 200 : 404, job || { error: "Unknown render." });
       }
       if (studio && pathname.startsWith("/download/")) {
-        const job = jobs.get(pathname.split("/").pop());
+        const [, , jobId, variant] = pathname.split("/");
+        const job = jobs.get(jobId);
         if (job?.status !== "complete")
           return send(404, { error: "Export not ready." });
-        const path = job.result.out;
+        if (variant && variant !== "silent")
+          return send(404, { error: "Unknown export variant." });
+        const path =
+          variant === "silent" ? job.result.withoutSound : job.result.withSound;
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="motioon${extname(path)}"`,
+          `attachment; filename="motioon${variant === "silent" ? "-silent" : "-sound"}${extname(path)}"`,
         );
         return send(200, readFileSync(path), mime[extname(path)]);
       }
@@ -191,7 +226,15 @@ export async function startProjectServer(
           "text/html; charset=utf-8",
         );
       }
-      if (studio && ["/studio.js", "/studio.css"].includes(pathname))
+      if (
+        studio &&
+        [
+          "/studio.js",
+          "/studio.css",
+          "/preset.css",
+          "/source-tools.js",
+        ].includes(pathname)
+      )
         return send(
           200,
           readFileSync(
@@ -199,6 +242,18 @@ export async function startProjectServer(
           ),
           mime[extname(pathname)],
         );
+      if (studio && pathname === "/studio-geist.woff2")
+        return send(
+          200,
+          readFileSync(
+            new URL("../studio/assets/geist.woff2", import.meta.url),
+          ),
+          "font/woff2",
+        );
+      if (studio && pathname === "/sound-panel.js")
+        return send(200, soundPanel, "text/javascript");
+      if (studio && pathname === "/studio-shell.js")
+        return send(200, studioShell, "text/javascript");
       // The motion.dev `motion` package (UMD build) drives Studio UI animation.
       if (studio && pathname === "/vendor/motion.js")
         return send(
@@ -215,12 +270,37 @@ export async function startProjectServer(
         const { composition } = read();
         return send(
           200,
-          compileToHtml(composition),
+          compileToHtml(composition, {
+            preview: studio && pathname === "/composition.html",
+          }),
           "text/html; charset=utf-8",
         );
       }
       const path = projectPath(root, "." + pathname);
       if (!statSync(path).isFile()) return send(404, { error: "Not a file." });
+      const range = req.headers.range;
+      const size = statSync(path).size;
+      if (range && /^bytes=\d*-\d*$/.test(range)) {
+        const [, startText, endText] = /^bytes=(\d*)-(\d*)$/.exec(range);
+        const start = startText
+          ? Number(startText)
+          : Math.max(0, size - Number(endText));
+        const end =
+          endText && startText ? Math.min(size - 1, Number(endText)) : size - 1;
+        if (start >= size || start > end) {
+          res.writeHead(416, { "content-range": `bytes */${size}` });
+          return res.end();
+        }
+        res.writeHead(206, {
+          "content-type": mime[extname(path)] || "application/octet-stream",
+          "content-range": `bytes ${start}-${end}/${size}`,
+          "content-length": end - start + 1,
+          "accept-ranges": "bytes",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+        });
+        return createReadStream(path, { start, end }).pipe(res);
+      }
       // HTML runs inside a sandboxed iframe in Studio; arbitrary project files are served only on loopback.
       return send(
         200,

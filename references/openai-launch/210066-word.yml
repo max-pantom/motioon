@@ -1,0 +1,18 @@
+ref: chatgpt-microsoft-word
+source: "@ChatGPT-2100661995762798916.mp4"
+sha256: 0ab8e9f3e6392796be0f5d3800f9364152a197d5dc1dc513233f25e855eaac13
+duration: 42.05
+fps: 30
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "blue product backdrop"]
+type: grotesque-medium
+detected_cuts_025: [2.1, 7.9, 11.63, 14.23, 18.17, 21.1, 31.2, 35.3]
+cut_detection_note: Major hard cuts are measurable; UI-level actions are grouped below.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 2.1], kind: card, copy: "Introducing ChatGPT for Microsoft Word", move: none}
+  - {t: [2.1, 21.1], kind: ui, copy: "Word document, ChatGPT prompt, contract edits", move: framed-screen-push-and-cursor}
+  - {t: [21.1, 35.3], kind: ui, copy: "Spreadsheet update and task completion", move: tight-crops-and-cursor}
+  - {t: [35.3, 39], kind: card, copy: "Use ChatGPT for Work", move: typography-reveal}
+  - {t: [39, 42.05], kind: end-card, copy: "Get started for free today / OpenAI mark", move: none}
+observation: Product UI is legible inside a blue field; title and end cards are sparse white.

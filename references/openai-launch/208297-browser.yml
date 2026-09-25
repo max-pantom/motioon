@@ -1,0 +1,19 @@
+ref: chatgpt-browser-extension
+source: "@ChatGPT-2082970812584432115.mp4"
+sha256: b7e8f6ec5435e971a8afa60cb0352f5edd34f9d5691cbc9e2abed625c0a91ce2
+duration: 55.7
+fps: 23.98
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "teal-green-violet product gradient"]
+type: grotesque-medium
+detected_cuts_025: [4.3, 17.1, 19.02, 34.12, 39.33, 41.46]
+cut_detection_note: This catches major hard cuts; fine browser actions and transitions were grouped into longer UI shots.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 4.3], kind: card, copy: "Three Chrome Extension Upgrades / Lightning fast video analysis", move: soft-gradient-field}
+  - {t: [4.3, 19.0], kind: ui, copy: "YouTube video and ChatGPT side panel", move: zoom-and-panel-scroll}
+  - {t: [19.0, 23.0], kind: card, copy: "@-mention any tab", move: soft-gradient-field}
+  - {t: [23.0, 39.3], kind: ui, copy: "Browser tabs and side panel", move: scroll-and-highlight}
+  - {t: [39.3, 41.5], kind: card, copy: "Highlight to handoff context", move: soft-gradient-field}
+  - {t: [41.5, 55.7], kind: ui, copy: "Document highlight and ChatGPT handoff", move: cursor-and-scroll}
+observation: Alternating color cards and long recorded browser flows; this reference invalidates a strict monochrome rule for product shots.

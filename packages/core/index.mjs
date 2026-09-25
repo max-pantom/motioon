@@ -24,6 +24,23 @@ export {
 export function loadComposition(file) {
   const comp = parseMotionMarkdown(readFileSync(file, "utf8"));
   comp.sourcePath = resolve(file);
+  if (comp.catalogPath) {
+    const path = projectPath(dirname(comp.sourcePath), comp.catalogPath);
+    const catalog = JSON.parse(readFileSync(path, "utf8"));
+    if (!catalog || Array.isArray(catalog) || typeof catalog !== "object")
+      throw new Error("Asset catalog must be a JSON object.");
+    comp.catalog = catalog;
+    for (const [id, entry] of Object.entries(catalog)) {
+      if (!/^[\w.-]+$/.test(id) || !entry || typeof entry.src !== "string")
+        throw new Error(`Invalid catalog entry '${id}'.`);
+      const src = entry.src.replace(/^\.\//, "");
+      if (Object.hasOwn(comp.assets, id) && comp.assets[id] !== src)
+        throw new Error(`Catalog asset '${id}' conflicts with frontmatter.`);
+      comp.assets[id] = src;
+      if (!comp.assetInfo.some((a) => a.id === id))
+        comp.assetInfo.push({ id, src, type: entry.kind });
+    }
+  }
   return comp;
 }
 export function projectPath(root, src) {
@@ -62,7 +79,7 @@ export function checkAssets(comp) {
     ...comp.audio.map((a) => resolveSrc(a.src, comp.assets)),
     ...comp.scenes.flatMap((s) =>
       s.elements
-        .filter((e) => e.type === "image")
+        .filter((e) => ["image", "video"].includes(e.type))
         .map((e) => resolveSrc(e.src, comp.assets)),
     ),
   ])

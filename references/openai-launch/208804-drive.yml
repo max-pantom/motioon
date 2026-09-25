@@ -1,0 +1,16 @@
+ref: chatgpt-google-drive
+source: "@ChatGPT-2088044956091089281.mp4"
+sha256: 198d4c2537c60ae3ab43fc663ec7d0fc09e3a5899003676a67b81b173c91947f
+duration: 15.7
+fps: 23.98
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "native UI colors"]
+type: native-product-ui
+detected_cuts_006: [10.26]
+cut_detection_note: Mostly continuous screen capture; a single frame-difference threshold misses low-contrast UI cuts.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 5], kind: ui, copy: "How can I help, Marie? / What should we work on?", move: cursor-and-input}
+  - {t: [5, 10.3], kind: ui, copy: "Google Drive file selection and summary", move: screen-focus}
+  - {t: [10.3, 15.7], kind: ui, copy: "Google Drive is now in Library / What's new", move: document-reveal}
+observation: The whole piece is a product flow. A card-card-ui-card requirement would incorrectly fail this reference.

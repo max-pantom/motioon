@@ -1,0 +1,8 @@
+[
+  {"click":"[data-scene='promise']"},
+  {"wait":900},
+  {"click":"[data-scene='product']"},
+  {"wait":900},
+  {"click":"[data-scene='name']"},
+  {"wait":900}
+]

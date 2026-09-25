@@ -1,0 +1,18 @@
+ref: chatgpt-health
+source: "@ChatGPT-2080340381028467190.mp4"
+sha256: b6ea00550190514589c68db15363d103abbc7bb3753f67f2ed3d918d0037b11c
+duration: 50.75
+fps: 30
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "product accent colors"]
+type: grotesque-medium
+detected_cuts_006: [1.47, 1.8, 2.1, 3.1, 3.4, 3.57, 27.5, 29.4, 42.87]
+cut_detection_note: White UI changes and animated typography make threshold detection incomplete; shot bounds below are visual estimates from 2-second samples.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 3.6], kind: card, copy: "With ChatGPT / now you can", move: type-and-color-collage}
+  - {t: [3.6, 11], kind: ui, copy: "better understand and navigate your health", move: sequential-UI-reveals}
+  - {t: [11, 27.5], kind: ui, copy: "Bring all your health information together / Get personalized responses and guidance", move: screen-focus-and-scroll}
+  - {t: [27.5, 42.9], kind: ui, copy: "ChatGPT conversation and health data", move: typing-and-response}
+  - {t: [42.9, 50.75], kind: end-card, copy: "ChatGPT", move: none}
+observation: Product content occupies most of the film; the opening card and closing mark frame real UI.

@@ -55,10 +55,50 @@ audio:
 ---
 ```
 
+Audio can also be authored as a cue sheet. `kind` controls mixer behavior,
+`at` accepts one time or a list of one-shot times, and the master is normalized
+during `render`:
+
+```yaml
+audio:
+  master: {lufs: -16, peak: -1.5, sample_rate: 48000}
+  tracks:
+    - {id: bed, kind: music, src: ./audio/bed.wav, start: 0, end: 8, gain_db: -22, fade_in: 0.6, fade_out: 1.4, duck_under: [vo]}
+    - {id: vo, kind: voice, src: ./audio/vo.wav, start: 1.5}
+    - {id: tick, kind: sting, src: ./audio/tick.wav, at: [0, 1.2, 4], gain_db: -16, oneshot: true}
+```
+
+Kinds are `voice`, `music`, `sting`, `whoosh`, and `room`. Music is side-chain
+ducked when voice exists. Stings less than 80ms apart fail validation; music
+above -16dB with voice also fails. The `openai` recipe additionally rejects
+whooshes.
+
 `audio: ./assets/music.wav` is shorthand for a single track. Multiple audio tracks
 are mixed with their independent offsets, trims and volume. Export pads silence
 and cuts audio to the requested frame range. Declared fonts use their asset ID as
 the CSS family name (e.g. `font_display: heading`).
+
+Brand constraints can be stored with the composition. `brand.logoLockup`
+records the source UI proportions; a `brand-lockup` layer scales the mark, gap
+and wordmark together from its `font_size`. `brand.typeScale`, `brand.spacing`,
+and `brand.radius` remain reviewable constraints for agents authoring components.
+
+```yaml
+brand:
+  accent: "#0071E3"
+  typeScale: {hero: 178, title: 54, body: 42}
+  spacing: [4, 8, 12, 16, 24, 32]
+  radius: 20
+  logoLockup:
+    mark: asset:mark
+    wordmark: Sunset
+    markWidth: 28
+    markHeight: 26
+    fontSize: 24
+    fontWeight: 500
+    gap: 8
+    tracking: "-0.035em"
+```
 
 Dimension presets: 16:9 → 1920×1080, 9:16 → 1080×1920, 1:1 → 1080×1080,
 4:5 → 1080×1350, 21:9 → 2560×1080. Other ratios use a 1080px long edge.
@@ -90,7 +130,7 @@ elements:
 ````
 
 Element IDs are unique throughout a composition. Types: `text`, `caption`,
-`image`, `svg`, `shape`, `html`, `group`. Text roles supply default type sizes:
+`image`, `svg`, `shape`, `html`, `group`, `brand-lockup`. Text roles supply default type sizes:
 `hero` (72), `sub` (28), `caption` (22), `label` (16). Override with `font_size`,
 `font_weight`, `color`, `max_width`. Position `x`/`y` is the element center;
 numbers mean pixels, percent strings are relative to canvas. `w`/`h` accept
@@ -115,7 +155,8 @@ either. Other properties: `opacity` (0–1), `scale`, `rotation` (degrees), `blu
   `none`. Duration and delay can use seconds, ms or frames. Easings: `linear`,
   `ease-out`, `ease-in`, `ease-in-out`, `expo.out`, `spring`, or
   `spring(frequency, damping)` (an analytic overshoot; quote `spring(3, 8)` in
-  flow YAML). An object with those four fields also works. `reveal` wipes in
+  flow YAML). `spring.soft` and `spring.snappy` are named variants. An object
+  with those four fields also works. `reveal` wipes in
   top-down, `type` reveals split characters one by one, `draw` traces SVG
   strokes via dash-offset.
 - Text can set `split: words|chars|lines` and `stagger: 0.06` to animate tokens
@@ -140,6 +181,96 @@ either. Other properties: `opacity` (0–1), `scale`, `rotation` (degrees), `blu
   Tracks are relative: `x`/`y` offset the element position, `scale`/`opacity`
   multiply, `rotation`/`blur` add. Tracks combine with `enter`/`exit` presets
   and with JavaScript `motion.animate`.
+
+### Seekable micro motion
+
+Structured layers may carry independent `behaviors:`. The runtime samples them
+from absolute time on every seek; they are effects on a layer, not new layer
+types. Supported V1 types are `blur` (`blur-in`/`focus-in` aliases), `mask`
+(`mask-reveal` alias), `depth`, `path` (`path-follow` alias), and `compress`.
+Each accepts scene-local `at`, `duration`, and `easing`; `on: event-id` starts it
+at a named event instead. `spring.soft` and `spring.snappy` are deterministic
+easings. Unsupported behavior types fail validation.
+
+```yaml
+# Frontmatter: reusable cubic Bézier and a timed event.
+paths:
+  arc: {type: bezier, points: [[120, 500], [440, 300], [850, 310], [1160, 170]]}
+events: {reveal: 1.2}
+audio:
+  tracks:
+    - {id: click, kind: sting, src: "asset:tick.cut", at: "event:reveal"}
+```
+
+```yaml
+# Inside a motion scene.
+camera: {type: push, from: 1, to: 1.04, follow: cursor, strength: 0.06, lag: 120ms}
+cursor:
+  x: 90%
+  y: 85%
+  actions:
+    - {type: move, at: 0, to: [50%, 50%], duration: 0.48, easing: expo.out}
+    - {type: click, at: 0.48, event: reveal}
+elements:
+  - id: product
+    type: image
+    src: asset:ui.feature
+    behaviors:
+      - {type: mask, shape: circle, origin: cursor, from: 0, to: 140, on: reveal}
+      - {type: blur, from: 18, to: 0, duration: 0.38, on: reveal}
+      - {type: depth, perspective: 1200, tilt_x: -4, tilt_y: 4, react: cursor}
+      - {type: compress, scale: 0.97, duration: 0.18, on: reveal}
+```
+
+Events in scene `events:` use scene-local time. A cursor click with `event:`
+emits its event at the click time. Audio `at: event:id` and behavior `on: id`
+resolve to that same absolute instant. Cursor `move` targets may be `[x, y]`
+coordinates or a `#id` of a structured element. The runtime generates a subtle
+curved path and seeks it without playing an animation. `path` behaviors accept
+four inline Bézier points or `path: arc`, `from`/`to` progress and optional
+`orient: tangent`. `depth` supports `tilt_x`, `tilt_y`, `float_y`, `period`,
+`perspective`, and `react: cursor`. `mask` supports circle, rect and line.
+For letters along a curve, set `distribution: glyphs` and `spacing: 0.035` on
+a text layer with a `path` behavior. Each glyph is placed independently.
+
+Layer `path:` is a second option for a timed route through canvas coordinates.
+It works on text, images and shapes. Scene `cursor.path:` uses the same timed
+points; `click: true` fires a visual click and `event:` names it for sound or
+behavior synchronization.
+
+```yaml
+cursor:
+  path:
+    - {t: 0, x: 74%, y: 75%}
+    - {t: 0.6, x: 52%, y: 51%, ease: expo-out, click: true, event: field-click}
+elements:
+  - id: headline
+    type: text
+    text: LIVE
+    enter: fade-blur 0.55 0.28
+    path:
+      - {t: 0, x: 12%, y: 38%}
+      - {t: 1.1, x: 18%, y: 28%, ease: expo-out}
+  - id: input
+    type: text
+    text: Q4 plan
+    typewriter: {cps: 10, from: 0.15, caret: true}
+```
+
+`typewriter` reveals characters at a seekable rate; the caret appears only
+while typing and can use `caret_color`. The scene cursor click ring can use
+`click_color`. Both default to `brand.accent` when it exists. `fade-blur` and
+`tilt-in` are entrance presets. Manual
+`keyframes.rotateX` and `keyframes.rotateY` accept ordered `{t, v, ease}`
+points in degrees, alongside opacity, position, scale, rotation and blur.
+A scene camera accepts `camera: {from: 1, to: 1.04, anchor: [52%, 48%]}`;
+`type: push` is implicit. The editable [eight-second example](examples/banger-8s/motion.md)
+uses all of these on the regular runtime.
+
+Every video render writes the requested file with an audio stream and a sibling
+`*.silent.mp4` or `*.silent.webm` with no audio stream. When `motion.md` has no
+audio cues, the first file contains a silent audio stream; Motioon does not
+invent sound. Studio presents both downloads.
 
 - `count:` turns a text element into a rising number. Fields: `to`, `from?`,
   `start?`, `duration?`, `easing?`, `prefix?`, `suffix?`, `decimals?`,

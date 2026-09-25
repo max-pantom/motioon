@@ -5,6 +5,10 @@ description: Create and edit HTML videos in Motioon using motion.md, the determi
 
 # Motioon video authoring
 
+For a new video or a craft problem, start with [the craft router](../motion-router/SKILL.md)
+and load only the relevant specialist skills. The complete project skill list is
+in [SKILLS.md](../SKILLS.md) and is discoverable with `motioon skills`.
+
 Read [the format reference](references/spec-short.md) for project syntax and
 runtime constraints. The installed CLI is `motioon` (alias `motion`); within this
 repository use `node bin/motion.mjs`. `motioon agent` prints the installed skill
@@ -14,6 +18,14 @@ The source of truth is `motion.md`, including the creative brief. Structured
 scenes support Studio property editing. Timed HTML scenes support unrestricted
 HTML/CSS/SVG and deterministic JavaScript, edited through source. Choose the
 format that fits the shot; do not force complex designs into primitive shapes.
+
+For a film about an existing product, read its design tokens and component code
+before composing. Store the actual accent, type scale, spacing, radius, and
+logo proportions in `brand:`. Use `brand-lockup` for the final mark and name so
+their source ratio survives scaling. Build product moments from editable layers
+(artwork, identity, metadata, price, controls) rather than a flattened card
+screenshot. `examples/sunset-idea-8s` demonstrates this, including a typed
+punctuation replacement, branded caret, cursor click, and decomposed listing.
 
 A useful loop:
 
@@ -45,8 +57,9 @@ A useful loop:
 Frame arguments are zero-based indices. A render range is end-exclusive; inspect
 accepts a list. Place assets inside the project, reference them by relative path
 or declared asset ID, and use local fonts for reproducibility. Network resources
-are blocked during render. Audio belongs in frontmatter tracks; embedded video
-and audio elements are outside V1 scope.
+are blocked during render. Audio belongs in frontmatter tracks. Structured
+`video` layers can seek cataloged local WebM clips; use `motion capture` to
+record real product UI into the catalog.
 
 Use CSS animations, `motion.onFrame`/`motion.animate`, or the file-format
 `animate:` keyframe tracks for motion. Compute state from absolute time, not
@@ -79,6 +92,17 @@ pacing from: `examples/sunset-launch`, `examples/ember-launch`,
 `examples/motioon-launch`.
 
 ## Launch-film recipe
+
+For `recipe: openai-launch`, read all six sheets in
+`references/openai-launch/` and the frozen rule file in
+`packages/core/recipes/openai-launch.yml`. These references are evidence, not
+footage to copy. Use sparse white or ink cards, hard cuts, and at least one
+cataloged UI image or video. Keep card colors to ground, ink and one muted
+color; product captures may carry their own colors. Run `motioon score` before
+rendering and fix failures. `motioon test gold/openai-8s` is the executable
+acceptance example; `motioon test gold/project-capture` checks a recorded UI
+video in the same timeline. The general recipe below applies to other styles; its
+fade-up and spring suggestions do not apply to `openai-launch`.
 
 A launch video reads as a banger when the silence is as deliberate as the
 motion. Use this four-beat rhythm, then cover the basics before embellishing:
@@ -127,4 +151,4 @@ These rules make minor work look deliberate:
 
 The engine exports MP4 and WebM, not generative footage. It does not invoke an LLM
 itself: the connected coding agent writes the composition. Do not claim automatic
-beat detection, cloud rendering, video compositing, or partial dependency caching.
+beat detection, cloud rendering, or partial dependency caching.

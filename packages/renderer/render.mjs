@@ -31,6 +31,73 @@ export const launchBrowser = () =>
       : {}),
   });
 export const ffmpegPath = process.env.MOTIOON_FFMPEG || ffmpegStatic;
+
+export function buildAudioFilterComplex(
+  comp,
+  from = 0,
+  to = comp.duration * comp.fps,
+) {
+  const filters = [];
+  const groups = { voice: [], bed: [], sting: [], other: [] };
+  const mix = (labels, out) => {
+    if (!labels.length) return null;
+    filters.push(
+      labels.length === 1
+        ? `${labels[0]}anull[${out}]`
+        : `${labels.join("")}amix=inputs=${labels.length}:duration=longest:normalize=0[${out}]`,
+    );
+    return `[${out}]`;
+  };
+  comp.audio.forEach((a, i) => {
+    const duration = a.duration;
+    const parts = [
+      `[${i + 1}:a]atrim=start=${a.trim}${duration != null ? `:duration=${duration}` : ""}`,
+      "asetpts=PTS-STARTPTS",
+    ];
+    if (a.fade_in > 0) parts.push(`afade=t=in:st=0:d=${a.fade_in}`);
+    if (a.fade_out > 0 && duration != null)
+      parts.push(
+        `afade=t=out:st=${Math.max(0, duration - a.fade_out)}:d=${a.fade_out}`,
+      );
+    parts.push(`volume=${a.volume * 10 ** (a.gain_db / 20)}`);
+    parts.push(`adelay=${Math.round(a.at * 1000)}:all=1`);
+    const label = `track${i}`;
+    filters.push(`${parts.join(",")}[${label}]`);
+    const bucket =
+      a.kind === "voice"
+        ? "voice"
+        : ["music", "room"].includes(a.kind)
+          ? "bed"
+          : a.kind === "sting"
+            ? "sting"
+            : "other";
+    groups[bucket].push(`[${label}]`);
+  });
+  const voice = mix(groups.voice, "voices");
+  const bed = mix(groups.bed, "beds");
+  const sting = mix(groups.sting, "stings");
+  const other = mix(groups.other, "others");
+  const finalInputs = [];
+  if (voice && bed) {
+    filters.push(`${voice}asplit=2[voice_side][voice_mix]`);
+    filters.push(
+      `${bed}[voice_side]sidechaincompress=threshold=0.05:ratio=6:attack=20:release=250[ducked]`,
+    );
+    finalInputs.push("[ducked]", "[voice_mix]");
+  } else {
+    if (bed) finalInputs.push(bed);
+    if (voice) finalInputs.push(voice);
+  }
+  if (sting) finalInputs.push(sting);
+  if (other) finalInputs.push(other);
+  const mixed = mix(finalInputs, "premaster");
+  const start = from / comp.fps;
+  const duration = (to - from) / comp.fps;
+  filters.push(
+    `${mixed}atrim=start=${start}:duration=${duration},asetpts=PTS-STARTPTS,apad,loudnorm=I=${comp.audioMaster.lufs}:TP=${comp.audioMaster.peak}:LRA=11,aresample=${comp.audioMaster.sample_rate}[audio]`,
+  );
+  return filters.join(";");
+}
 export function runFfmpeg(args, { input } = {}) {
   return new Promise((yes, no) => {
     const proc = spawn(
@@ -71,9 +138,14 @@ function fingerprint(root, html, browserVersion) {
       a.name.localeCompare(b.name),
     )) {
       if (
-        [".motioon", "node_modules", "dist", ".git", "test-results"].includes(
-          ent.name,
-        ) ||
+        [
+          ".motioon",
+          "node_modules",
+          "dist",
+          ".git",
+          "test-results",
+          "expected",
+        ].includes(ent.name) ||
         ent.name.endsWith(".tmp") ||
         /\.(mp4|webm)\.json$/.test(ent.name)
       )
@@ -207,6 +279,8 @@ export async function renderVideo(
     throw new Error("Output extension must match the format.");
   mkdirSync(dirname(out), { recursive: true });
   const temp = out + `.${randomUUID()}.tmp.${format}`;
+  const silentOut = out.slice(0, -extname(out).length) + `.silent.${format}`;
+  const silentTemp = silentOut + `.${randomUUID()}.tmp.${format}`;
   const service = await startProjectServer(file, { snapshot: comp });
   let browser;
   try {
@@ -279,23 +353,25 @@ export async function renderVideo(
         projectPath(dirname(comp.sourcePath), resolveSrc(a.src, comp.assets)),
       );
     if (comp.audio.length) {
-      const filters = comp.audio.map(
-        (a, i) =>
-          `[${i + 1}:a]atrim=start=${a.trim}${a.duration != null ? `:duration=${a.duration}` : ""},asetpts=PTS-STARTPTS,volume=${a.volume},adelay=${Math.round(a.at * 1000)}:all=1[a${i}]`,
-      );
-      filters.push(
-        comp.audio.map((_, i) => `[a${i}]`).join("") +
-          `amix=inputs=${comp.audio.length}:duration=longest:normalize=0,atrim=start=${from / comp.fps}:duration=${(to - from) / comp.fps},asetpts=PTS-STARTPTS,apad[audio]`,
-      );
       args.push(
         "-filter_complex",
-        filters.join(";"),
+        buildAudioFilterComplex(comp, from, to),
         "-map",
         "0:v",
         "-map",
         "[audio]",
       );
-    } else args.push("-map", "0:v", "-an");
+    } else
+      args.push(
+        "-f",
+        "lavfi",
+        "-i",
+        `anullsrc=channel_layout=stereo:sample_rate=${comp.audioMaster.sample_rate}`,
+        "-map",
+        "0:v",
+        "-map",
+        "1:a",
+      );
     if (format === "mp4")
       args.push(
         "-c:v",
@@ -308,7 +384,10 @@ export async function renderVideo(
         "yuv420p",
         "-movflags",
         "+faststart",
-        ...(comp.audio.length ? ["-c:a", "aac", "-b:a", "192k"] : []),
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
       );
     else
       args.push(
@@ -324,7 +403,8 @@ export async function renderVideo(
         "0",
         "-pix_fmt",
         "yuv420p",
-        ...(comp.audio.length ? ["-c:a", "libopus"] : []),
+        "-c:a",
+        "libopus",
       );
     args.push("-t", String((to - from) / comp.fps), temp);
     await runFfmpeg(args, {
@@ -336,6 +416,18 @@ export async function renderVideo(
       },
     });
     renameSync(temp, out);
+    await runFfmpeg([
+      "-y",
+      "-i",
+      out,
+      "-map",
+      "0:v:0",
+      "-c:v",
+      "copy",
+      "-an",
+      silentTemp,
+    ]);
+    renameSync(silentTemp, silentOut);
     onProgress({
       progress: 1,
       frames: to - from,
@@ -344,6 +436,9 @@ export async function renderVideo(
     });
     const result = {
       out,
+      withSound: out,
+      withoutSound: silentOut,
+      audioCues: comp.audio.length,
       format,
       width: comp.width,
       height: comp.height,
@@ -361,5 +456,6 @@ export async function renderVideo(
     await browser?.close();
     await service.close();
     rmSync(temp, { force: true });
+    rmSync(silentTemp, { force: true });
   }
 }

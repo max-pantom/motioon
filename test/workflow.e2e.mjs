@@ -106,6 +106,8 @@ test(
       assert.equal(first.frames, 30);
       assert.equal(first.cachedFrames, 0);
       assert.ok(existsSync(first.out));
+      assert.ok(existsSync(first.withoutSound));
+      assert.notEqual(first.withSound, first.withoutSound);
       const decoded = await runFfmpeg([
         "-i",
         first.out,
@@ -132,6 +134,9 @@ test(
         "-",
       ]);
       assert.ok(sound.length > 10000);
+      await assert.rejects(() =>
+        runFfmpeg(["-i", first.withoutSound, "-map", "0:a", "-f", "null", "-"]),
+      );
       const second = await renderVideo(p.file, {
         out: join(p.dir, "range.webm"),
         from: 5,
@@ -165,6 +170,25 @@ test(
         to: 2,
       });
       assert.equal(third.cachedFrames, 0);
+      writeFileSync(p.file, fixture);
+      const noCues = await renderVideo(p.file, {
+        out: join(p.dir, "no-cues.mp4"),
+        from: 0,
+        to: 2,
+      });
+      assert.equal(noCues.audioCues, 0);
+      assert.ok(existsSync(noCues.withoutSound));
+      const silentTrack = await runFfmpeg([
+        "-i",
+        noCues.withSound,
+        "-map",
+        "0:a",
+        "-f",
+        "s16le",
+        "-",
+      ]);
+      assert.ok(silentTrack.length > 0);
+      assert.ok(silentTrack.every((sample) => sample === 0));
     } finally {
       p.close();
     }
@@ -242,14 +266,24 @@ test(
       await page
         .getByRole("button", { name: "Export video", exact: true })
         .click();
+      await page.locator("#export-audio").selectOption("both");
       await page
         .getByRole("button", { name: "Render video", exact: true })
         .click();
       await page.waitForSelector("#download:not([hidden])", { timeout: 90000 });
+      await page.waitForSelector("#download-silent:not([hidden])", {
+        timeout: 90000,
+      });
       const href = await page.locator("#download").getAttribute("href");
       const download = await fetch(service.url + href);
       assert.equal(download.status, 200);
       assert.ok((await download.arrayBuffer()).byteLength > 1000);
+      const silentHref = await page
+        .locator("#download-silent")
+        .getAttribute("href");
+      const silentDownload = await fetch(service.url + silentHref);
+      assert.equal(silentDownload.status, 200);
+      assert.ok((await silentDownload.arrayBuffer()).byteLength > 1000);
       await page.keyboard.press("Escape");
       await page.setViewportSize({ width: 390, height: 844 });
       await page.waitForTimeout(100);
@@ -380,7 +414,7 @@ test(
         await new Promise((r) => setTimeout(r, 50));
         return document
           .querySelector("[data-id=title]")
-          .style.outline.includes("rgb(10, 132, 255)");
+          .style.outline.includes("rgb(163, 230, 53)");
       });
       assert.equal(highlighted, true);
       await page.evaluate(() =>

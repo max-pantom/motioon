@@ -1,0 +1,19 @@
+ref: chatgpt-messages-plugin
+source: "@ChatGPT-2090499359641329950.mp4"
+sha256: df9b1eeeb9cb446322e771f4b734b6223802ff0a3b2933cf04df62581adc7717
+duration: 32.09
+fps: 30
+size: [1920, 1080]
+palette: ["#FFFFFF", "#111111", "native Messages blue"]
+type: grotesque-medium
+detected_cuts_006: [22.3, 23.83, 24.03]
+cut_detection_note: White-to-white UI progression is poorly captured by pixel-difference cuts; times below are visual estimates.
+audio: present; exact transient times not inferred from pictures
+shots:
+  - {t: [0, 2], kind: card, copy: "Apple Messages Plugin", move: none}
+  - {t: [2, 13], kind: ui, copy: "Prompt and suggested reply", move: typing-and-response}
+  - {t: [13, 18], kind: card, copy: "Review messages before sending", move: none}
+  - {t: [18, 27], kind: ui, copy: "Approval dialog and sent iMessage", move: cursor-and-reveal}
+  - {t: [27, 30], kind: card, copy: "Now in Codex and ChatGPT Work", move: none}
+  - {t: [30, 32.09], kind: end-card, copy: "OpenAI", move: none}
+observation: Cards explain a consequential UI step, then the captured product demonstrates it.

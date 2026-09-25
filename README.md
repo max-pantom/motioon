@@ -18,10 +18,18 @@ npm run setup
 npm run dev
 ```
 
-Open **http://127.0.0.1:4400**. The sample project has three scenes, selectable
+Open **http://127.0.0.1:4400**. Studio opens in dark mode using the colors and type from
+[`b51pyaag6` shadcn preset](https://ui.shadcn.com/create?preset=b51pyaag6)
+(Rhea, neutral surfaces, lime accent, Geist type). Its React shell uses locally
+bundled shadcn-style source components. The
+sample project has three scenes, selectable
 layers, property editing, playback, frame scrubbing, source editing, undo/redo,
-assets, and local video export. It follows the supplied light Studio design.
+assets, and local video export. The source editor highlights keys and colors;
+its quick-edit panel changes the selected value without rewriting the scene.
+Turn on **Move on canvas** to drag a structured layer directly in the preview;
+the new position saves to `motion.md`.
 Edits save to `examples/product-launch/motion.md`.
+See the [Studio guide](docs/STUDIO.md) for editing, export, and theme details.
 
 To create your own project:
 
@@ -34,6 +42,47 @@ node bin/motion.mjs frame ./my-video/motion.md 120 -o frame-120.png
 node bin/motion.mjs render ./my-video/motion.md -o ./my-video/video.mp4
 ```
 
+For a reference-guided launch piece, set `recipe: openai-launch` in frontmatter,
+use `catalog: ./assets/catalog.json`, and include a real UI image or WebM layer.
+The six local reference shot sheets are in
+[`references/openai-launch/`](references/openai-launch/README.md). Card palette,
+hard cuts, holds, product footage and cut cues are checked by `motion score`.
+The recipe limits card colors; UI inserts may retain their product colors.
+
+```sh
+node bin/motion.mjs score ./my-video/motion.md
+node bin/motion.mjs sound synth ./my-video/motion.md
+node bin/motion.mjs capture ./my-video/motion.md --url http://127.0.0.1:3000 --seconds 3 --id ui.demo
+node bin/motion.mjs test gold/openai-8s
+node bin/motion.mjs test gold/project-capture
+node bin/motion.mjs test gold/micro-motion-8s
+node bin/motion.mjs test gold/openai-8s --review
+```
+
+`capture` records a real browser interaction to a cataloged WebM. Pass
+`--flow flow.json` for steps such as `{"click":"#start"}`, `{"wait":500}`,
+`{"type":{"selector":"#prompt","text":"Hello"}}`, or
+`{"press":"Enter"}`. The gold command renders an 8-second film, compares
+normalized description, cue sheet and five PNG frames, and checks score and
+measured audio loudness. `--review` opens the playable film beside those frames.
+The second gold fixture records a real Studio interaction and seeks it as a
+video layer, covering the complete capture pipeline.
+The micro-motion fixture checks cursor movement and clicks, timed events,
+mask/focus/depth/path/compress behaviors, and a camera push in one seekable clip.
+The [It’s live example](examples/banger-8s/motion.md) uses timed cursor paths,
+seekable typing, fade-blur, tilt keyframes and a camera anchor. Preview it with
+`node bin/motion.mjs studio examples/banger-8s/motion.md`.
+Every render now returns the requested video with an audio stream plus a
+`.silent` sibling without audio. Studio's export dialog lets you choose the
+sound version, silent version, or both downloads; projects without
+audio cues get a silent audio stream in the first file.
+The Studio sound panel uses shadcn/ui Card and Button source-component patterns
+and an adapted ElevenLabs UI Waveform for cue preview.
+The offline sound kit now uses short, damped percussion-like edit cues. Run
+`sound synth` without flags to fill missing files, or add `--force` to replace
+the four generated `tick.*` files in a project. Its WAV files stay editable in
+`assets/audio/`; audition the export, since loudness checks cannot judge timbre.
+
 Use `npm link` if you want the `motioon` and `motion` commands available globally.
 Global installation is optional; it is not performed by setup.
 
@@ -44,14 +93,17 @@ packages exist: `@motioon/motion` (packages/motion) emits `motion.md` from
 `film()`/`scene()` builders, `enter.*` entrance presets, `tween`/`countUp`/
 `swap` and a Markdown serializer (see `examples/motioon-launch/build.mjs`); the
 motion.dev `motion` package powers the Studio UI (progress tween, completion
-pop). See `skills/motion/SKILL.md` for the authoring loop agents already know.
+pop). See [the bundled skills index](skills/SKILLS.md) for the authoring skills.
+Run `motioon skills` for their installed paths, or `motioon agent` for a machine
+readable skill list and MCP configuration. The router selects just the skills
+needed for an edit; [SPEC.md](SPEC.md) defines what the runtime supports.
 
 The [format and runtime reference](SPEC.md) documents both supported scene formats:
 
 - **Structured scenes**: YAML layers inside a `motion` fence. Studio can edit
   text, font size, color, position, size, scale, rotation, opacity, visibility,
   scene/element timing and entrance animation settings. Layers include `text`,
-  `caption`, `image`, `svg`, `shape`, `html` and nested groups (`group` with
+  `caption`, `image`, `video`, `svg`, `shape`, `html` and nested groups (`group` with
   `children`). Motion lives in the file: `enter`/`exit` presets, per-property
   keyframe tracks (`animate:` with `from`/`to`/`start`/`duration`/`easing`),
   rising counters (`count:`), mid-scene text swaps (`replace:`), typewriter
@@ -154,8 +206,8 @@ MCP tools through an actual client.
 ## V1 boundaries
 
 This is a working local V1. It supports HTML, CSS, SVG, local images/fonts,
-deterministic JS, audio, and MP4/WebM. It intentionally leaves out embedded video
-clips, automatic beat analysis, arbitrary JavaScript reverse engineering, cloud
+cataloged seekable WebM clips, deterministic JS, audio, and MP4/WebM export.
+It intentionally leaves out automatic beat analysis, arbitrary JavaScript reverse engineering, cloud
 rendering, collaboration, and an integrated LLM provider. Canvas can be authored
 through `onFrame`; WebGL/3D libraries and custom async assets need author-managed
 readiness and have not been validated as first-class features.
@@ -180,9 +232,9 @@ packages/core       Parse, validate, compile, persist edits
 packages/runtime    Absolute-time browser animation engine
 packages/renderer   Chromium capture, cache, FFmpeg encoding
 packages/server     Loopback project and Studio API
-packages/studio     Light local editing interface
+packages/studio     Dark local editing interface
 packages/cli        CLI commands and project creation
 packages/mcp        Agent tools and stdio server
-skills/motion       Agent authoring instructions
+skills               Bundled agent authoring and craft skills
 examples            Working structured and HTML projects
 ```

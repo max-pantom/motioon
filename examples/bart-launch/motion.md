@@ -79,8 +79,18 @@ elements:
     y: 58.5%
     w: 17
     h: 17
-    fill: "#ff6548"
-    enter: pop 0.4 0.72 expo.out
+    fill: "#000000"
+    enter:
+      preset: pop
+      duration: 0.4
+      delay: 0.72
+      easing: expo.out
+    scale: 1
+    rotation: 0
+    opacity: 1
+    at: 0
+    duration: 2.4
+    hidden: false
 ```
 
 ## scene: collection
@@ -200,8 +210,18 @@ elements:
     h: 625
     fit: cover
     radius: 3
-    enter: zoom-out 0.72 0 expo.out
+    enter:
+      preset: blur-in
+      duration: 0.72
+      delay: 0
+      easing: expo.out
     exit: wipe-up 0.26
+    scale: 1
+    rotation: 0
+    opacity: 1
+    at: 0
+    duration: 3.6
+    hidden: false
   - id: object-index
     type: text
     role: label

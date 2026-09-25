@@ -9,14 +9,17 @@ export const escapeHtml = (s = "") =>
 const json = (v) => JSON.stringify(v).replaceAll("<", "\\u003c");
 const unit = (v) => (typeof v === "number" ? `${v}px` : v);
 export function resolveSrc(src, assets) {
-  return src?.replace(/^asset:(?:\/\/)?([\w-]+)$/, (_, id) => assets[id] ?? "");
+  return src?.replace(
+    /^asset:(?:\/\/)?([\w.-]+)$/,
+    (_, id) => assets[id] ?? "",
+  );
 }
 function replaceAssets(html, assets) {
-  return html.replace(/asset:(?:\/\/)?([\w-]+)/g, (_, id) =>
+  return html.replace(/asset:(?:\/\/)?([\w.-]+)/g, (_, id) =>
     escapeHtml(assets[id] || ""),
   );
 }
-function renderElement(el, assets) {
+function renderElement(el, assets, brand, theme) {
   const css = {
     left: unit(el.x ?? "50%"),
     top: unit(el.y ?? "50%"),
@@ -34,6 +37,7 @@ function renderElement(el, assets) {
     "letter-spacing": unit(el.letter_spacing),
     "line-height": el.line_height,
     "text-transform": el.text_transform,
+    "text-align": el.text_align,
     "-webkit-text-stroke": el.text_stroke,
   };
   if (el.type === "group")
@@ -45,12 +49,30 @@ function renderElement(el, assets) {
   const common = `class="el el-${escapeHtml(el.type)} role-${escapeHtml(el.role || "none")}" data-id="${escapeHtml(el.id)}" data-motion-id="${escapeHtml(el.id)}" data-spec="${escapeHtml(JSON.stringify(el))}" style="${escapeHtml(style)}"`;
   if (el.type === "group")
     return `<div ${common}>${(el.children || [])
-      .map((child) => renderElement(child, assets))
+      .map((child) => renderElement(child, assets, brand, theme))
       .join("\n")}</div>`;
+  if (el.type === "brand-lockup") {
+    const lock = brand.logoLockup;
+    const fontSize = Number(el.font_size || lock.fontSize);
+    const factor = fontSize / Number(lock.fontSize);
+    const markWidth = Number(lock.markWidth) * factor;
+    const markHeight = Number(lock.markHeight) * factor;
+    const gap = Number(lock.gap) * factor;
+    return `<div ${common}><span class="brand-lockup-inner" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;gap:${gap}px;white-space:nowrap"><img src="${escapeHtml(resolveSrc(lock.mark, assets))}" alt="" style="display:block;width:${markWidth}px;height:${markHeight}px;object-fit:contain;flex:none"><span style="font-family:${escapeHtml(lock.fontFamily || theme.font_display)};font-size:${fontSize}px;font-weight:${escapeHtml(lock.fontWeight || 500)};letter-spacing:${escapeHtml(lock.tracking || "-0.035em")};line-height:1;color:${escapeHtml(el.color || theme.text)}">${escapeHtml(lock.wordmark)}</span></span></div>`;
+  }
   if (el.type === "image")
     return `<img ${common} src="${escapeHtml(resolveSrc(el.src, assets))}" alt="${escapeHtml(el.alt || el.id)}" data-fit="${escapeHtml(el.fit || "contain")}">`;
+  if (el.type === "video")
+    return `<video ${common} src="${escapeHtml(resolveSrc(el.src, assets))}" data-fit="${escapeHtml(el.fit || "contain")}" preload="auto" playsinline muted></video>`;
   let content = escapeHtml(el.text || "");
-  if (
+  if (el.distribution === "glyphs" && ["text", "caption"].includes(el.type)) {
+    content = [...String(el.text || "")]
+      .map(
+        (glyph, index) =>
+          `<span class="motion-glyph" data-glyph="${index}">${escapeHtml(glyph)}</span>`,
+      )
+      .join("");
+  } else if (
     ["words", "chars", "lines"].includes(el.split) &&
     ["text", "caption"].includes(el.type)
   ) {
@@ -80,7 +102,7 @@ export function compileToHtml(comp, { preview = false } = {}) {
   const scenes = comp.scenes
     .map(
       (s) =>
-        `<section class="scene" data-id="${escapeHtml(s.id)}" data-start="${s.start}" data-duration="${s.duration}" data-transition="${s.transition.type}" data-transition-duration="${s.transition.duration}">${s.format === "html" ? replaceAssets(s.html, comp.assets) : s.elements.map((e) => renderElement(e, comp.assets)).join("\n")}</section>`,
+        `<section class="scene" data-id="${escapeHtml(s.id)}" data-start="${s.start}" data-duration="${s.duration}" data-transition="${s.transition.type}" data-transition-duration="${s.transition.duration}">${s.format === "html" ? replaceAssets(s.html, comp.assets) : s.elements.map((e) => renderElement(e, comp.assets, comp.brand, comp.theme)).join("\n")}${s.cursor ? '<div class="motion-cursor" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 2l1 18 5-5 4 8 3-2-4-8 7-1z" fill="#111" stroke="#fff" stroke-width="1.2"/></svg><span class="motion-click-ring"></span></div>' : ""}</section>`,
     )
     .join("\n");
   const fonts = comp.assetInfo
@@ -97,8 +119,12 @@ export function compileToHtml(comp, { preview = false } = {}) {
   #stage{position:relative;width:${comp.width}px;height:${comp.height}px;overflow:hidden;background:${comp.background};transform-origin:top left}
   .scene{position:absolute;inset:0;visibility:hidden;opacity:0;pointer-events:none}.scene.active{visibility:visible;opacity:1;pointer-events:auto}
   .el{position:absolute;margin:0;transform:translate(-50%,-50%)}.el-text,.el-caption{font-size:22px;font-family:${comp.theme.font_display};text-align:center;white-space:pre-wrap;padding:0 8px}.motion-token{display:inline-block;white-space:pre;will-change:transform,opacity,filter}
+  body.motion-edit-mode .el{cursor:grab}body.motion-edit-mode .el:active{cursor:grabbing}body.motion-edit-mode #stage{user-select:none}
+  .motion-glyph{position:absolute;left:0;top:0;white-space:pre;will-change:transform,opacity}
   .role-hero{font-size:72px;font-weight:800;line-height:1.05;max-width:86%}.role-sub{font-size:28px;font-weight:500;color:${comp.theme.muted};max-width:70%;line-height:1.35}.role-caption{font-size:22px;font-weight:600}.role-label{font-size:16px;font-weight:600;color:${comp.theme.accent}}
   .el-image{object-fit:contain;max-width:100%;max-height:100%}.el-image[data-fit=cover]{object-fit:cover}.el-shape[data-shape=circle],.el-shape[data-shape=pill]{border-radius:999px}
+  .el-video{object-fit:contain;max-width:100%;max-height:100%}.el-video[data-fit=cover]{object-fit:cover}
   .el-group{left:0;top:0;width:100%;height:100%;transform:none;transform-origin:50% 50%;isolation:isolate}.el-svg svg{width:100%;height:100%;display:block}
+  .motion-cursor{position:absolute;left:0;top:0;width:24px;height:24px;z-index:9999;pointer-events:none;transform-origin:3px 2px}.motion-cursor svg{display:block;width:100%;height:100%}.motion-click-ring{position:absolute;left:-10px;top:-10px;width:26px;height:26px;border:1.5px solid #111;border-radius:50%;opacity:0;transform-origin:center}
   </style><script>window.__MOTION_COMP__=${json(comp)};</script><script>${runtime}</script></head><body data-preview="${preview ? 1 : 0}"><div id="stage">${scenes}</div><script>motion.mount();</script></body></html>`;
 }

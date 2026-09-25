@@ -1,0 +1,31 @@
+id: openai-launch
+evidence:
+  - references/openai-launch/208034-health.yml
+  - references/openai-launch/208297-browser.yml
+  - references/openai-launch/208804-drive.yml
+  - references/openai-launch/209049-messages.yml
+  - references/openai-launch/209199-stickers.yml
+  - references/openai-launch/210066-word.yml
+card:
+  ground: ["#FFFFFF", "#0D0D0D"]
+  ink: ["#111111", "#FFFFFF"]
+  max_colors: 3
+  max_text_layers: 2
+  max_motion_duration: 0.4
+product:
+  required: true
+  allowed_backdrop: one-contextual-color-or-gradient
+  source: cataloged-ui-image-or-video
+timing:
+  min_long_hold: 1.6
+  transition: cut
+motion:
+  allowed: [rise, cut, none]
+  forbidden: [fade-up, blur-in, pop, bounce]
+sound:
+  cut: dry-tick
+  rise: muted-arrive
+  bed_max_gain_db: -22
+  default_bed: false
+  lufs: -16
+  peak: -1.5

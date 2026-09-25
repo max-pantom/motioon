@@ -21,6 +21,14 @@ export const enter = Object.freeze({
   fade: (d = 0.6, delay = 0) => preset("fade", d, delay),
   fadeUp: (d = 0.7, delay = 0) => preset("fade-up", d, delay),
   scaleFade: (d = 0.5, delay = 0) => preset("scale-fade", d, delay),
+  rise: (d = 0.32, delay = 0) => ({
+    enter: {
+      preset: "rise",
+      duration: d,
+      delay,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+    },
+  }),
   slideLeft: (d = 0.6, delay = 0) => preset("slide-left", d, delay),
   slideRight: (d = 0.6, delay = 0) => preset("slide-right", d, delay),
   pop: (d = 0.4, delay = 0) => preset("pop", d, delay),
@@ -125,13 +133,92 @@ export function group(id, children, opts = {}) {
   return { id, type: "group", children, ...opts };
 }
 
+/** Deterministic scene cursor actions. Set these in scene.cursor.actions. */
+export const cursor = Object.freeze({
+  moveTo: (to, { at = 0, duration = 0.4, easing = ease.expoOut } = {}) => ({
+    type: "move",
+    to,
+    at,
+    duration,
+    easing,
+  }),
+  click: ({ at = 0, event, duration = 0.18 } = {}) => ({
+    type: "click",
+    at,
+    duration,
+    ...(event ? { event } : {}),
+  }),
+});
+
+/** Keep each part as a separate editable layer inside one component group. */
+export const component = Object.freeze({
+  decompose: (id, parts, opts = {}) =>
+    group(
+      id,
+      Array.isArray(parts)
+        ? parts
+        : Object.entries(parts).map(([partId, part]) => ({
+            id: partId,
+            ...part,
+          })),
+      opts,
+    ),
+  enter: (name = "fade", duration = 0.4, delay = 0) =>
+    preset(name, duration, delay),
+  transitionTo: (
+    properties,
+    { start = 0, duration = 0.4, easing = ease.expoOut } = {},
+  ) => ({
+    animate: Object.fromEntries(
+      Object.entries(properties).map(([prop, [from, to]]) => [
+        prop,
+        { from, to, start, duration, easing },
+      ]),
+    ),
+  }),
+});
+
+/** Seekable typing and replacement tracks for text layers. */
+text.type = ({ cps = 12, from = 0, caret = true, caret_color } = {}) => ({
+  typewriter: { cps, from, caret, ...(caret_color ? { caret_color } : {}) },
+});
+text.replace = swap;
+
+export const number = Object.freeze({ count: countUp });
+export const mask = Object.freeze({
+  reveal: ({
+    shape = "rect",
+    from = 0,
+    to = 100,
+    at = 0,
+    duration = 0.5,
+    easing = ease.expoOut,
+    on,
+    origin,
+  } = {}) => ({
+    behaviors: [
+      {
+        type: "mask",
+        shape,
+        from,
+        to,
+        at,
+        duration,
+        easing,
+        ...(on ? { on } : {}),
+        ...(origin ? { origin } : {}),
+      },
+    ],
+  }),
+});
+
 export function scene(
   id,
-  { duration = 2, at, transition, elements = [], direction } = {},
+  { duration = 2, at, transition, elements = [], direction, ...rest } = {},
   _elements,
 ) {
   if (_elements !== undefined) elements = _elements;
-  return { id, duration, at, transition, elements, direction };
+  return { id, duration, at, transition, elements, direction, ...rest };
 }
 
 export function toMarkdown(film) {
@@ -150,10 +237,20 @@ export function toMarkdown(film) {
   const blocks = [];
   if (film.direction) blocks.push(`# Direction\n${film.direction}\n`);
   for (const s of film.scenes) {
-    const body = { duration: s.duration };
-    if (s.at != null) body.at = s.at;
-    if (s.transition != null) body.transition = s.transition;
-    if (s.elements.length) body.elements = s.elements;
+    const {
+      id: _id,
+      duration,
+      at,
+      transition,
+      elements,
+      direction,
+      ...rest
+    } = s;
+    const body = { duration, ...rest };
+    if (at != null) body.at = at;
+    if (transition != null) body.transition = transition;
+    if (direction != null) body.direction = direction;
+    if (elements.length) body.elements = elements;
     blocks.push(
       `## scene: ${s.id}\n\`\`\`motion\n${stringify(body, { lineWidth: 0 })}\`\`\`\n`,
     );
@@ -171,6 +268,7 @@ export function film(opts = {}) {
     duration: opts.duration ?? 3,
     background: opts.background ?? "#FFFFFF",
     theme: opts.theme,
+    brand: opts.brand,
     assets: opts.assets,
     audio: opts.audio,
     direction: opts.direction,
@@ -207,6 +305,10 @@ export const motion = {
   shape,
   svgEl,
   group,
+  cursor,
+  component,
+  number,
+  mask,
   tween,
   tracks,
   countUp,

@@ -2,6 +2,10 @@ node_modules/
 dist/
 .motioon/
 test-results/
+releases/
 *.mp4
 *.webm
+*.mp4.json
+*.webm.json
+examples/**/inspection*/
 .DS_Store
